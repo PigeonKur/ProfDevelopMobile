@@ -9,6 +9,8 @@ import com.example.profdevelop.domain.model.LessonResult
 import com.example.profdevelop.domain.model.MatchingAnswer
 import com.example.profdevelop.domain.model.MatchingPair
 import com.example.profdevelop.domain.model.Question
+import com.example.profdevelop.domain.model.QuestionAttempt
+import com.example.profdevelop.domain.model.QuestionCheckResult
 import com.example.profdevelop.domain.model.QuestionReview
 import com.google.gson.annotations.SerializedName
 
@@ -76,6 +78,12 @@ data class QuestionAttemptDto(
     @SerializedName("matchingPairs") val matchingPairs: List<MatchingAnswerDto>?
 )
 
+data class QuestionCheckRequestDto(
+    @SerializedName("questionId") val questionId: Int,
+    @SerializedName("selectedAnswerIds") val selectedAnswerIds: List<Int>?,
+    @SerializedName("matchingPairs") val matchingPairs: List<MatchingAnswerDto>?
+)
+
 data class MatchingAnswerDto(
     @SerializedName("leftPairId") val leftPairId: Int,
     @SerializedName("rightPairId") val rightPairId: Int
@@ -102,6 +110,14 @@ data class AchievementDto(
 )
 
 data class QuestionReviewDto(
+    @SerializedName("questionId") val questionId: Int,
+    @SerializedName("isCorrect") val isCorrect: Boolean,
+    @SerializedName("explanation") val explanation: String?,
+    @SerializedName("correctAnswerIds") val correctAnswerIds: List<Int>,
+    @SerializedName("correctMatchingPairs") val correctMatchingPairs: List<MatchingAnswerDto>
+)
+
+data class QuestionCheckResultDto(
     @SerializedName("questionId") val questionId: Int,
     @SerializedName("isCorrect") val isCorrect: Boolean,
     @SerializedName("explanation") val explanation: String?,
@@ -162,6 +178,14 @@ fun LessonAttempt.toDto(): LessonAttemptRequestDto = LessonAttemptRequestDto(
     }
 )
 
+fun QuestionAttempt.toCheckDto(): QuestionCheckRequestDto = QuestionCheckRequestDto(
+    questionId = questionId,
+    selectedAnswerIds = selectedAnswerIds.ifEmpty { null },
+    matchingPairs = matchingPairs.takeIf { it.isNotEmpty() }?.map {
+        MatchingAnswerDto(it.leftPairId, it.rightPairId)
+    }
+)
+
 fun LessonResultDto.toDomain(): LessonResult = LessonResult(
     isCompleted = isCompleted,
     score = score,
@@ -183,5 +207,15 @@ fun LessonResultDto.toDomain(): LessonResult = LessonResult(
                 MatchingAnswer(pair.leftPairId, pair.rightPairId)
             }
         )
+    }
+)
+
+fun QuestionCheckResultDto.toDomain(): QuestionCheckResult = QuestionCheckResult(
+    questionId = questionId,
+    isCorrect = isCorrect,
+    explanation = explanation,
+    correctAnswerIds = correctAnswerIds,
+    correctMatchingPairs = correctMatchingPairs.map {
+        MatchingAnswer(it.leftPairId, it.rightPairId)
     }
 )

@@ -2,11 +2,15 @@ package com.example.profdevelop.data.remote
 
 import com.example.profdevelop.data.remote.api.CoursesApi
 import com.example.profdevelop.data.remote.api.ProgressApi
+import com.example.profdevelop.data.remote.api.UsersApi
+import com.example.profdevelop.data.remote.dto.AchievementDto
 import com.example.profdevelop.data.remote.dto.CourseDto
 import com.example.profdevelop.data.remote.dto.LessonAttemptRequestDto
 import com.example.profdevelop.data.remote.dto.LessonDto
 import com.example.profdevelop.data.remote.dto.LessonResultDto
 import com.example.profdevelop.data.remote.dto.QuestionDto
+import com.example.profdevelop.data.remote.dto.QuestionCheckRequestDto
+import com.example.profdevelop.data.remote.dto.QuestionCheckResultDto
 import com.example.profdevelop.di.NetworkFactory
 
 class LearningRemoteDataSource(
@@ -24,6 +28,18 @@ class LearningRemoteDataSource(
         return createCoursesApi(baseUrl, accessToken).getQuestions(lessonId)
     }
 
+    suspend fun getAchievements(baseUrl: String, accessToken: String, userId: Int): List<AchievementDto> {
+        return createUsersApi(baseUrl, accessToken).getAchievements(userId)
+    }
+
+    suspend fun checkQuestion(
+        baseUrl: String,
+        accessToken: String,
+        request: QuestionCheckRequestDto
+    ): QuestionCheckResultDto {
+        return createProgressApi(baseUrl, accessToken).checkQuestion(request)
+    }
+
     suspend fun submitLessonAttempt(
         baseUrl: String,
         accessToken: String,
@@ -37,4 +53,7 @@ class LearningRemoteDataSource(
 
     private fun createProgressApi(baseUrl: String, accessToken: String): ProgressApi =
         networkFactory.createRetrofit(baseUrl, accessToken).create(ProgressApi::class.java)
+
+    private fun createUsersApi(baseUrl: String, accessToken: String): UsersApi =
+        networkFactory.createRetrofit(baseUrl, accessToken).create(UsersApi::class.java)
 }

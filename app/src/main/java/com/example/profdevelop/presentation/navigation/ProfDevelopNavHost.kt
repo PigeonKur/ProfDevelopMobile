@@ -1,6 +1,7 @@
 package com.example.profdevelop.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,9 +60,7 @@ fun ProfDevelopNavHost() {
         composable(AppDestination.Login.route) {
             val viewModel: AuthViewModel = viewModel(
                 factory = AuthViewModelFactory(
-                    loginUseCase = module.loginUseCase,
-                    getApiUrlUseCase = module.getApiUrlUseCase,
-                    updateApiUrlUseCase = module.updateApiUrlUseCase
+                    loginUseCase = module.loginUseCase
                 )
             )
             LoginScreen(
@@ -74,15 +73,22 @@ fun ProfDevelopNavHost() {
             )
         }
 
-        composable(AppDestination.Home.route) {
+        composable(AppDestination.Home.route) { backStackEntry ->
+            val refreshToken = backStackEntry.savedStateHandle
+                .getStateFlow("refreshToken", 0)
+                .collectAsState()
+                .value
             val viewModel: HomeViewModel = viewModel(
                 factory = HomeViewModelFactory(
                     getAssignedCoursesUseCase = module.getAssignedCoursesUseCase,
-                    getLessonsUseCase = module.getLessonsUseCase
+                    getLessonsUseCase = module.getLessonsUseCase,
+                    getStoredSessionUseCase = module.getStoredSessionUseCase,
+                    getAchievementsUseCase = module.getAchievementsUseCase
                 )
             )
             HomeScreen(
                 viewModel = viewModel,
+                refreshToken = refreshToken,
                 onOpenCourse = { courseId, courseTitle ->
                     navController.navigate(AppDestination.courseRoute(courseId, courseTitle))
                 },
@@ -101,6 +107,10 @@ fun ProfDevelopNavHost() {
         ) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getInt("courseId") ?: 0
             val courseTitle = decode(backStackEntry.arguments?.getString("courseTitle"))
+            val refreshToken = backStackEntry.savedStateHandle
+                .getStateFlow("refreshToken", 0)
+                .collectAsState()
+                .value
             val viewModel: CourseViewModel = viewModel(
                 factory = CourseViewModelFactory(
                     courseId = courseId,
@@ -110,6 +120,7 @@ fun ProfDevelopNavHost() {
             CourseScreen(
                 title = courseTitle,
                 viewModel = viewModel,
+                refreshToken = refreshToken,
                 onOpenLesson = { lessonId, lessonTitle ->
                     navController.navigate(AppDestination.lessonRoute(lessonId, lessonTitle))
                 }
@@ -129,13 +140,20 @@ fun ProfDevelopNavHost() {
                 factory = LessonViewModelFactory(
                     lessonId = lessonId,
                     getQuestionsUseCase = module.getQuestionsUseCase,
+                    checkQuestionUseCase = module.checkQuestionUseCase,
                     submitLessonAttemptUseCase = module.submitLessonAttemptUseCase
                 )
             )
             LessonScreen(
                 title = lessonTitle,
                 viewModel = viewModel,
-                onFinished = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onFinished = {
+                    val previousEntry = navController.previousBackStackEntry
+                    val current = previousEntry?.savedStateHandle?.get<Int>("refreshToken") ?: 0
+                    previousEntry?.savedStateHandle?.set("refreshToken", current + 1)
+                    navController.popBackStack()
+                }
             )
         }
     }

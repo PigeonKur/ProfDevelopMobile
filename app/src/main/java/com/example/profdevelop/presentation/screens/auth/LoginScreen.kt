@@ -2,7 +2,6 @@ package com.example.profdevelop.presentation.screens.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -107,29 +106,6 @@ fun LoginScreen(
                     Text(
                         text = "Запомнить пароль",
                         style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
-                Text(
-                    text = if (state.showServerSettings) {
-                        "Скрыть настройки сервера"
-                    } else {
-                        "Показать настройки сервера"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { viewModel.toggleServerSettings() }
-                )
-
-                if (state.showServerSettings) {
-                    OutlinedTextField(
-                        value = state.apiUrl,
-                        onValueChange = viewModel::updateApiUrl,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Адрес API") },
-                        supportingText = {
-                            Text("Эмулятор: https://10.0.2.2:7222/ . Телефон по USB: https://127.0.0.1:7222/ после adb reverse.")
-                        }
                     )
                 }
 

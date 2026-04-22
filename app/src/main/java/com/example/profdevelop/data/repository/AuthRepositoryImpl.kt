@@ -13,6 +13,8 @@ class AuthRepositoryImpl(
     private val localDataSource: AuthPreferencesDataSource
 ) : AuthRepository {
 
+    override suspend fun getStoredSession(): UserSession? = localDataSource.getStoredSession()
+
     override suspend fun login(
         email: String,
         password: String,

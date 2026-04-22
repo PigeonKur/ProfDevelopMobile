@@ -36,6 +36,14 @@ data class QuestionReview(
     val correctMatchingPairs: List<MatchingAnswer>
 )
 
+data class QuestionCheckResult(
+    val questionId: Int,
+    val isCorrect: Boolean,
+    val explanation: String?,
+    val correctAnswerIds: List<Int>,
+    val correctMatchingPairs: List<MatchingAnswer>
+)
+
 data class Achievement(
     val id: Int,
     val title: String,

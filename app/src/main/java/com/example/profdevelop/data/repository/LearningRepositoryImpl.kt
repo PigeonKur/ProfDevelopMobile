@@ -2,6 +2,7 @@ package com.example.profdevelop.data.repository
 
 import com.example.profdevelop.data.local.AuthPreferencesDataSource
 import com.example.profdevelop.data.remote.LearningRemoteDataSource
+import com.example.profdevelop.data.remote.dto.toCheckDto
 import com.example.profdevelop.data.remote.dto.toDomain
 import com.example.profdevelop.data.remote.dto.toDto
 import com.example.profdevelop.domain.model.Course
@@ -9,6 +10,9 @@ import com.example.profdevelop.domain.model.Lesson
 import com.example.profdevelop.domain.model.LessonAttempt
 import com.example.profdevelop.domain.model.LessonResult
 import com.example.profdevelop.domain.model.Question
+import com.example.profdevelop.domain.model.QuestionAttempt
+import com.example.profdevelop.domain.model.QuestionCheckResult
+import com.example.profdevelop.domain.model.Achievement
 import com.example.profdevelop.domain.repository.LearningRepository
 
 class LearningRepositoryImpl(
@@ -32,6 +36,24 @@ class LearningRepositoryImpl(
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
         return remoteDataSource.getQuestions(baseUrl, session.accessToken, lessonId).map { it.toDomain() }
+    }
+
+    override suspend fun getAchievements(userId: Int): List<Achievement> {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        return remoteDataSource.getAchievements(baseUrl, session.accessToken, userId).map {
+            Achievement(it.id, it.title, it.description, it.icon, it.earnedAt)
+        }
+    }
+
+    override suspend fun checkQuestion(answer: QuestionAttempt): QuestionCheckResult {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        return remoteDataSource.checkQuestion(
+            baseUrl = baseUrl,
+            accessToken = session.accessToken,
+            request = answer.toCheckDto()
+        ).toDomain()
     }
 
     override suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult {
