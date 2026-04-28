@@ -40,8 +40,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.ColorFilter
 import com.example.profdevelop.R
+import java.time.LocalDate
 import com.example.profdevelop.domain.model.Lesson
 import com.example.profdevelop.domain.model.UserProfile
 import com.example.profdevelop.presentation.theme.BrandBackground
@@ -58,6 +64,8 @@ import com.example.profdevelop.presentation.theme.BrandWarmSoft
 
 private val StreakOrange   = Color(0xFFFF9600)
 private val StreakOrangeBg = Color(0xFFFFF3E0)
+private val StreakGray     = Color(0xFF9DA89E)
+private val StreakGrayBg   = Color(0xFFEFEFEF)
 private val XpGold         = Color(0xFFD4A000)
 private val XpGoldBg       = Color(0xFFFFF9E0)
 private val AvatarRingColor = Color(0xFF58CC02)
@@ -106,51 +114,23 @@ fun HomeScreen(
                         TopBar(user = state.user)
                     }
 
-                    state.nextLesson?.let { next ->
+                    val nextLesson = state.nextLesson
+                    val pages = buildList {
+                        nextLesson?.let { add(HomePage.Continue(it)) }
+                        state.chapters
+                            .filter { it.course.isMandatory }
+                            .filter { nextLesson == null || it.course.id != nextLesson.courseId }
+                            .sortedBy { it.course.deadline ?: "9999-12-31" }
+                            .forEach { add(HomePage.Mandatory(it)) }
+                    }
+
+                    if (pages.isNotEmpty()) {
                         item {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp, vertical = 16.dp)
-                                    .clickable { onOpenLesson(next.lesson.id, next.lesson.title) },
-                                shape = RoundedCornerShape(22.dp),
-                                colors = CardDefaults.cardColors(containerColor = BrandGreenSoft)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(BrandGreen),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("▶", color = Color.White, fontSize = 18.sp)
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "Продолжить",
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = BrandGreen,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = next.lesson.title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = BrandText
-                                        )
-                                        Text(
-                                            text = "${next.courseTitle} • ${next.lesson.xpReward} XP",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = BrandMuted
-                                        )
-                                    }
-                                }
-                            }
+                            HomePager(
+                                pages = pages,
+                                onOpenLesson = onOpenLesson,
+                                onOpenCourse = onOpenCourse
+                            )
                         }
                     }
 
@@ -169,13 +149,18 @@ fun HomeScreen(
 
 @Composable
 private fun TopBar(user: UserProfile?) {
+    val streakActive = isStreakActive(user?.lastActiveDate)
+    val streakColor = if (streakActive) StreakOrange else StreakGray
+    val streakBg = if (streakActive) StreakOrangeBg else StreakGrayBg
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(BrandBackground)
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Box(
             modifier = Modifier
@@ -200,16 +185,13 @@ private fun TopBar(user: UserProfile?) {
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
-
         TopBarStatChip(
             iconRes = R.drawable.burn,
             value = "${user?.streakDays ?: 0}",
-            valueColor = StreakOrange,
-            bgColor = StreakOrangeBg
+            valueColor = streakColor,
+            bgColor = streakBg,
+            iconTint = if (streakActive) null else StreakGray
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
 
         TopBarStatChip(
             iconRes = R.drawable.xp,
@@ -217,8 +199,6 @@ private fun TopBar(user: UserProfile?) {
             valueColor = XpGold,
             bgColor = XpGoldBg
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
 
         Box(
             modifier = Modifier
@@ -247,13 +227,20 @@ private fun TopBar(user: UserProfile?) {
     }
 }
 
+private fun isStreakActive(lastActiveDate: String?): Boolean {
+    if (lastActiveDate.isNullOrBlank()) return false
+    return runCatching { LocalDate.parse(lastActiveDate.take(10)) == LocalDate.now() }
+        .getOrDefault(false)
+}
+
 
 @Composable
 private fun TopBarStatChip(
     @DrawableRes iconRes: Int,
     value: String,
     valueColor: Color,
-    bgColor: Color
+    bgColor: Color,
+    iconTint: Color? = null
 ) {
     Row(
         modifier = Modifier
@@ -270,7 +257,8 @@ private fun TopBarStatChip(
             Image(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
+                colorFilter = iconTint?.let { ColorFilter.tint(it) }
             )
         }
         Text(
@@ -401,11 +389,11 @@ private fun CourseLessonNode(
                             )
                         }
                         else -> {
-                            Text(
-                                text = "•",
-                                color = BrandMuted,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                            Icon(
+                                imageVector = Icons.Filled.Lock,
+                                contentDescription = "Заблокировано",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
                             )
                         }
                     }
@@ -415,6 +403,176 @@ private fun CourseLessonNode(
             if (!isLast) StepsConnector(rotation = stepRotation)
         }
     }
+}
+
+private sealed interface HomePage {
+    data class Continue(val next: HomeNextLesson) : HomePage
+    data class Mandatory(val chapter: HomeChapter) : HomePage
+}
+
+@Composable
+private fun HomePager(
+    pages: List<HomePage>,
+    onOpenLesson: (Int, String) -> Unit,
+    onOpenCourse: (Int, String) -> Unit
+) {
+    val pagerState = rememberPagerState(pageCount = { pages.size })
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 4.dp)
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+            pageSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 20.dp)
+        ) { page ->
+            when (val item = pages[page]) {
+                is HomePage.Continue -> ContinueCard(
+                    next = item.next,
+                    onClick = { onOpenLesson(item.next.lesson.id, item.next.lesson.title) }
+                )
+                is HomePage.Mandatory -> MandatoryCourseCard(
+                    chapter = item.chapter,
+                    onClick = { onOpenCourse(item.chapter.course.id, item.chapter.course.title) }
+                )
+            }
+        }
+
+        if (pages.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(pages.size) { index ->
+                    val active = pagerState.currentPage == index
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (active) 8.dp else 6.dp)
+                            .background(
+                                color = if (active) BrandGreen else BrandRouteDivider,
+                                shape = CircleShape
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContinueCard(next: HomeNextLesson, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = BrandGreenSoft)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(BrandGreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("▶", color = Color.White, fontSize = 18.sp)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Продолжить",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = BrandGreen,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = next.lesson.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandText
+                )
+                Text(
+                    text = "${next.courseTitle} • ${next.lesson.xpReward} XP",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BrandMuted
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MandatoryCourseCard(chapter: HomeChapter, onClick: () -> Unit) {
+    val deadlineText = chapter.course.deadline?.let { formatDeadline(it) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = BrandWarmSoft)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(BrandWarm),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("!", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Назначенный курс",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = BrandWarm,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = chapter.course.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandText
+                )
+                val subtitle = buildString {
+                    deadlineText?.let { append("До $it") }
+                    if (chapter.course.totalLessons > 0) {
+                        if (isNotEmpty()) append(" • ")
+                        append("${chapter.completedCount}/${chapter.course.totalLessons} уроков")
+                    }
+                }
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BrandMuted
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatDeadline(raw: String): String {
+    return runCatching {
+        val date = LocalDate.parse(raw.take(10))
+        "%02d.%02d.%d".format(date.dayOfMonth, date.monthValue, date.year)
+    }.getOrDefault(raw)
 }
 
 @Composable

@@ -1,5 +1,7 @@
 package com.example.profdevelop.presentation.screens.lesson
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,17 +33,29 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.profdevelop.presentation.theme.BrandOutline
+import com.example.profdevelop.presentation.util.Haptics
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import com.example.profdevelop.presentation.theme.BrandText
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -349,6 +366,19 @@ private fun MatchingBoard(
     var activeLeftId by remember(question.id) { mutableIntStateOf(question.matchingPairs.firstOrNull()?.id ?: -1) }
     val expandedLeft = remember(question.id) { mutableStateMapOf<Int, Boolean>() }
     val expandedRight = remember(question.id) { mutableStateMapOf<Int, Boolean>() }
+    // Перемешиваем правую колонку один раз на вопрос, чтобы правильные ответы
+    // не оказывались параллельны левой колонке.
+    val shuffledRight = remember(question.id) {
+        val pairs = question.matchingPairs
+        if (pairs.size < 2) {
+            pairs
+        } else {
+            generateSequence { pairs.shuffled() }
+                .first { shuffled ->
+                    shuffled.withIndex().any { (i, p) -> pairs[i].id != p.id }
+                }
+        }
+    }
     val palette = listOf(
         Color(0xFFEAF2FF),
         Color(0xFFFFF4D9),
@@ -410,7 +440,7 @@ private fun MatchingBoard(
                     color = BrandMuted
                 )
 
-                question.matchingPairs.forEach { pair ->
+                shuffledRight.forEach { pair ->
                     val usedByLeftId = selectedMatches.entries.firstOrNull { it.value == pair.id }?.key
                     val leftIndex = question.matchingPairs.indexOfFirst { it.id == usedByLeftId }
                     val pairColor = if (leftIndex >= 0) palette[leftIndex % palette.size] else null
@@ -506,98 +536,219 @@ private fun LessonResultView(
     onFinish: () -> Unit
 ) {
     val result = state.result ?: return
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(
+    val xpProgress = remember(result.xpEarned) { Animatable(0f) }
+    val xpCounter by remember(result.xpEarned) {
+        derivedStateOf { (xpProgress.value * result.xpEarned).toInt() }
+    }
+    val streakScale = remember(result.streakDays) { Animatable(1f) }
+
+    val perfect = result.score == result.maxScore && result.maxScore > 0
+    val accentColor = if (perfect) BrandGreen else BrandWarm
+    val accentSoft = if (perfect) BrandGreenSoft else BrandWarmSoft
+    val streakIconColor = if (result.streakActive) StreakOrange else StreakGray
+
+    LaunchedEffect(result.xpEarned, result.streakIncreased) {
+        delay(150)
+        scope.launch {
+            // Заполняем XP-шкалу с лёгкими тиками-вибрациями.
+            val ticks = 6
+            val durationPerTick = 80L
+            repeat(ticks) { i ->
+                xpProgress.animateTo(
+                    targetValue = (i + 1f) / ticks,
+                    animationSpec = tween(durationMillis = durationPerTick.toInt())
+                )
+                Haptics.xpTick(context)
+            }
+        }
+        if (result.streakIncreased) {
+            delay(450)
+            Haptics.streakFlame(context)
+            streakScale.animateTo(1.25f, tween(120))
+            streakScale.animateTo(1f, tween(180))
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BrandBackground)
-            .statusBarsPadding(),
-        contentPadding = PaddingValues(
-            start = 20.dp,
-            top = 32.dp,
-            end = 20.dp,
-            bottom = 28.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            Card(
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = BrandGreenSoft)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .background(BrandGreen, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.approved),
-                            contentDescription = "Пройден",
-                            modifier = Modifier.size(36.dp),
+        Spacer(modifier = Modifier.weight(1f))
 
-                            colorFilter = ColorFilter.tint(Color.White)
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .background(accentColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.approved),
+                contentDescription = "Пройден",
+                modifier = Modifier.size(48.dp),
+                colorFilter = ColorFilter.tint(Color.White)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = if (perfect) "Урок пройден!" else "Урок завершён",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = BrandText
+        )
+        Text(
+            text = title,
+            color = BrandMuted,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = BrandSurface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, BrandOutline)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ResultStatBlock(
+                        title = "Точность",
+                        value = if (result.maxScore > 0) {
+                            "${(result.score * 100 / result.maxScore)}%"
+                        } else "—",
+                        valueColor = accentColor
+                    )
+                    ResultStatBlock(
+                        title = "Серия",
+                        value = "${result.streakDays}",
+                        valueColor = streakIconColor,
+                        iconRes = R.drawable.burn,
+                        iconTint = streakIconColor,
+                        scale = streakScale.value
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.xp),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "Полученные XP",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = BrandMuted,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Text(
+                            text = "+$xpCounter",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = XpGold
                         )
                     }
-                    Text(
-                        text = "Урок пройден",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                    LinearProgressIndicator(
+                        progress = { xpProgress.value },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        color = XpGold,
+                        trackColor = accentSoft
                     )
-                    Text(
-                        text = title,
-                        color = BrandMuted,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ResultStatChip("Результат", "${result.score} / ${result.maxScore}")
-                        ResultStatChip("XP", "${result.xpEarned}")
-                        ResultStatChip("Серия", "${result.streakDays}")
-                    }
                 }
             }
         }
 
-        item {
-            Button(
-                onClick = onFinish,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("К маршруту")
-            }
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = onFinish,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+        ) {
+            Text(
+                text = "К маршруту",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
     }
 }
 
+private val StreakOrange = Color(0xFFFF9600)
+private val StreakGray = Color(0xFF9DA89E)
+private val XpGold = Color(0xFFD4A000)
+
 @Composable
-private fun ResultStatChip(
+private fun ResultStatBlock(
     title: String,
-    value: String
+    value: String,
+    valueColor: Color,
+    iconRes: Int? = null,
+    iconTint: Color? = null,
+    scale: Float = 1f
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = BrandSurface),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .width(96.dp)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = BrandMuted,
+            fontWeight = FontWeight.SemiBold
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = BrandMuted
-            )
+            if (iconRes != null) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                    colorFilter = iconTint?.let { ColorFilter.tint(it) }
+                )
+            }
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = valueColor
             )
         }
     }

@@ -17,9 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -160,7 +163,7 @@ private fun CourseLessonNode(
     val nodeText = when {
         lesson.isCompleted -> "★"
         lesson.isUnlocked -> "${lesson.orderIndex}"
-        else -> "•"
+        else -> null
     }
 
     Box(
@@ -197,12 +200,21 @@ private fun CourseLessonNode(
                         .clickable(enabled = lesson.isUnlocked, onClick = onClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = nodeText,
-                        color = if (lesson.isUnlocked || lesson.isCompleted) BrandSurface else BrandMuted,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (nodeText != null) {
+                        Text(
+                            text = nodeText,
+                            color = if (lesson.isUnlocked || lesson.isCompleted) BrandSurface else BrandMuted,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = "Заблокировано",
+                            tint = BrandSurface,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
 

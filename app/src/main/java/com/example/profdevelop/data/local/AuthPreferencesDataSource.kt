@@ -36,6 +36,7 @@ class AuthPreferencesDataSource(private val context: Context) {
         val level = intPreferencesKey("level")
         val streakDays = intPreferencesKey("streak_days")
         val avatarUrl = stringPreferencesKey("avatar_url")
+        val lastActiveDate = stringPreferencesKey("last_active_date")
     }
 
     val sessionFlow: Flow<UserSession?> = context.authPreferences.data
@@ -74,6 +75,8 @@ class AuthPreferencesDataSource(private val context: Context) {
             prefs[Keys.level] = session.user.level
             prefs[Keys.streakDays] = session.user.streakDays
             session.user.avatarUrl?.let { prefs[Keys.avatarUrl] = it }
+            session.user.lastActiveDate?.let { prefs[Keys.lastActiveDate] = it }
+                ?: prefs.remove(Keys.lastActiveDate)
         }
     }
 
@@ -92,6 +95,7 @@ class AuthPreferencesDataSource(private val context: Context) {
             prefs.remove(Keys.level)
             prefs.remove(Keys.streakDays)
             prefs.remove(Keys.avatarUrl)
+            prefs.remove(Keys.lastActiveDate)
         }
     }
 
@@ -117,7 +121,8 @@ class AuthPreferencesDataSource(private val context: Context) {
                 totalXp = preferences[Keys.totalXp] ?: 0,
                 level = preferences[Keys.level] ?: 1,
                 streakDays = preferences[Keys.streakDays] ?: 0,
-                avatarUrl = preferences[Keys.avatarUrl]
+                avatarUrl = preferences[Keys.avatarUrl],
+                lastActiveDate = preferences[Keys.lastActiveDate]
             )
         )
     }

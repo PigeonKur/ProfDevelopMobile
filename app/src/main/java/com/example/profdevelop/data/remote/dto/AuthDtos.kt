@@ -30,7 +30,8 @@ data class UserProfileDto(
     @SerializedName("totalXp") val totalXp: Int,
     @SerializedName("level") val level: Int,
     @SerializedName("streakDays") val streakDays: Int,
-    @SerializedName("avatarUrl") val avatarUrl: String?
+    @SerializedName("avatarUrl") val avatarUrl: String?,
+    @SerializedName("lastActiveDate") val lastActiveDate: String? = null
 )
 
 fun AuthResponseDto.toDomain(rememberMe: Boolean): UserSession = UserSession(
@@ -50,5 +51,6 @@ private fun UserProfileDto.toDomain(): UserProfile = UserProfile(
     totalXp = totalXp,
     level = level,
     streakDays = streakDays,
-    avatarUrl = avatarUrl
+    avatarUrl = avatarUrl,
+    lastActiveDate = lastActiveDate
 )
