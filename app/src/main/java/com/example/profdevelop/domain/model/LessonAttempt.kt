@@ -24,6 +24,9 @@ data class LessonResult(
     val totalXp: Int,
     val newLevel: Int,
     val streakDays: Int,
+    val previousStreak: Int,
+    val streakIncreased: Boolean,
+    val streakActive: Boolean,
     val newAchievements: List<Achievement>,
     val questionReviews: List<QuestionReview>
 )

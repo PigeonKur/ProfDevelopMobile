@@ -78,7 +78,8 @@ fun ProfDevelopNavHost() {
             val viewModel: HomeViewModel = viewModel(
                 factory = HomeViewModelFactory(
                     getAssignedCoursesUseCase = module.getAssignedCoursesUseCase,
-                    getLessonsUseCase = module.getLessonsUseCase
+                    getLessonsUseCase = module.getLessonsUseCase,
+                    authPreferences = module.preferencesDataSource
                 )
             )
             HomeScreen(

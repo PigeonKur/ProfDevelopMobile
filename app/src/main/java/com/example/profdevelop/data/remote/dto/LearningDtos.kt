@@ -89,6 +89,9 @@ data class LessonResultDto(
     @SerializedName("totalXp") val totalXp: Int,
     @SerializedName("newLevel") val newLevel: Int,
     @SerializedName("streakDays") val streakDays: Int,
+    @SerializedName("previousStreak") val previousStreak: Int?,
+    @SerializedName("streakIncreased") val streakIncreased: Boolean?,
+    @SerializedName("streakActive") val streakActive: Boolean?,
     @SerializedName("newAchievements") val newAchievements: List<AchievementDto>,
     @SerializedName("questions") val questions: List<QuestionReviewDto>
 )
@@ -170,6 +173,9 @@ fun LessonResultDto.toDomain(): LessonResult = LessonResult(
     totalXp = totalXp,
     newLevel = newLevel,
     streakDays = streakDays,
+    previousStreak = previousStreak ?: streakDays,
+    streakIncreased = streakIncreased ?: false,
+    streakActive = streakActive ?: (streakDays > 0),
     newAchievements = newAchievements.map {
         Achievement(it.id, it.title, it.description, it.icon, it.earnedAt)
     },

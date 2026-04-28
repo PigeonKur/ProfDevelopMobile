@@ -19,7 +19,7 @@ import com.example.profdevelop.domain.usecase.UpdateApiUrlUseCase
 
 class AppModule(context: Context) {
     private val networkFactory = NetworkFactory()
-    private val preferencesDataSource = AuthPreferencesDataSource(context)
+    val preferencesDataSource = AuthPreferencesDataSource(context)
     private val authRemoteDataSource = AuthRemoteDataSource(networkFactory)
     private val learningRemoteDataSource = LearningRemoteDataSource(networkFactory)
 

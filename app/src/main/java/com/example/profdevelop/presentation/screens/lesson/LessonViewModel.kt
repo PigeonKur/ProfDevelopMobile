@@ -91,10 +91,32 @@ class LessonViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
             runCatching {
                 getQuestionsUseCase(lessonId)
-            }.onSuccess {
+            }.onSuccess { questions ->
+                // Перемешиваем правые варианты у matching-вопросов один раз на загрузке,
+                // чтобы правильные ответы не были на одной строке с левыми.
+                val shuffled = questions.associate { q ->
+                    q.id to if (q.type == "matching") {
+                        var attempts = 0
+                        var permuted: List<com.example.profdevelop.domain.model.MatchingPair>
+                        do {
+                            permuted = q.matchingPairs.shuffled()
+                            attempts++
+                            // На малом количестве пар возможна перестановка, повторяющая исходную —
+                            // в этом случае пробуем ещё раз (но не уходим в бесконечность).
+                        } while (
+                            attempts < 5 &&
+                            q.matchingPairs.size > 1 &&
+                            permuted.zip(q.matchingPairs).all { it.first.id == it.second.id }
+                        )
+                        permuted
+                    } else {
+                        q.matchingPairs
+                    }
+                }
                 _state.value = LessonUiState(
                     isLoading = false,
-                    questions = it
+                    questions = questions,
+                    shuffledRightOptions = shuffled
                 )
             }.onFailure {
                 _state.value = LessonUiState(
@@ -113,6 +135,7 @@ data class LessonUiState(
     val currentQuestionIndex: Int = 0,
     val selectedAnswers: Map<Int, Set<Int>> = emptyMap(),
     val selectedMatches: Map<Int, Map<Int, Int>> = emptyMap(),
+    val shuffledRightOptions: Map<Int, List<com.example.profdevelop.domain.model.MatchingPair>> = emptyMap(),
     val showResult: Boolean = false,
     val result: LessonResult? = null,
     val error: String? = null

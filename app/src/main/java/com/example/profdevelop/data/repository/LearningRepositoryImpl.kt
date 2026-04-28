@@ -10,6 +10,8 @@ import com.example.profdevelop.domain.model.LessonAttempt
 import com.example.profdevelop.domain.model.LessonResult
 import com.example.profdevelop.domain.model.Question
 import com.example.profdevelop.domain.repository.LearningRepository
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class LearningRepositoryImpl(
     private val remoteDataSource: LearningRemoteDataSource,
@@ -37,11 +39,33 @@ class LearningRepositoryImpl(
     override suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult {
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
-        return remoteDataSource.submitLessonAttempt(
+        val result = remoteDataSource.submitLessonAttempt(
             baseUrl = baseUrl,
             accessToken = session.accessToken,
             request = attempt.toDto()
         ).toDomain()
+
+        // Сохраняем актуальный XP/уровень/серию обратно в локальную сессию,
+        // чтобы экраны видели свежие данные.
+        if (session.rememberMe) {
+            val newLastActive = if (result.streakActive) {
+                LocalDate.now().format(DateTimeFormatter.ISO_DATE)
+            } else {
+                session.user.lastActiveDate
+            }
+            localDataSource.saveSession(
+                session.copy(
+                    user = session.user.copy(
+                        totalXp = result.totalXp,
+                        level = result.newLevel,
+                        streakDays = result.streakDays,
+                        lastActiveDate = newLastActive
+                    )
+                )
+            )
+        }
+
+        return result
     }
 
     private suspend fun requireSession() =
