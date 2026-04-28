@@ -49,8 +49,18 @@ class AuthRepositoryImpl(
                 refreshToken = stored.refreshToken
             ).toDomain(rememberMe = true)
 
-            localDataSource.saveSession(refreshed)
-            refreshed
+            // Если бэкенд не вернул lastActiveDate (старая версия API), сохраняем
+            // ранее записанное значение, чтобы серия не сбрасывалась после перезахода.
+            val merged = if (refreshed.user.lastActiveDate.isNullOrBlank()) {
+                refreshed.copy(
+                    user = refreshed.user.copy(lastActiveDate = stored.user.lastActiveDate)
+                )
+            } else {
+                refreshed
+            }
+
+            localDataSource.saveSession(merged)
+            merged
         }.getOrElse {
             localDataSource.clearSession()
             null

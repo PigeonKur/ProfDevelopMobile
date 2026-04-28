@@ -8,6 +8,10 @@ import android.os.VibratorManager
 
 object Haptics {
 
+    /** Управляется из настроек пользователя. */
+    @Volatile
+    var enabled: Boolean = true
+
     /**
      * Короткая вибрация средней силы — «огонёк загорается» при продлении серии.
      */
@@ -23,6 +27,7 @@ object Haptics {
     }
 
     private fun vibrate(context: Context, durationMs: Long, amplitude: Int) {
+        if (!enabled) return
         val vibrator = obtainVibrator(context) ?: return
         if (!vibrator.hasVibrator()) return
 

@@ -2,6 +2,7 @@ package com.example.profdevelop.di
 
 import android.content.Context
 import com.example.profdevelop.data.local.AuthPreferencesDataSource
+import com.example.profdevelop.data.local.SettingsPreferencesDataSource
 import com.example.profdevelop.data.remote.AuthRemoteDataSource
 import com.example.profdevelop.data.remote.LearningRemoteDataSource
 import com.example.profdevelop.data.repository.AuthRepositoryImpl
@@ -25,6 +26,7 @@ import com.example.profdevelop.domain.usecase.UpdateApiUrlUseCase
 class AppModule(context: Context) {
     private val networkFactory = NetworkFactory()
     private val preferencesDataSource = AuthPreferencesDataSource(context)
+    val settingsDataSource = SettingsPreferencesDataSource(context)
     private val authRemoteDataSource = AuthRemoteDataSource(networkFactory)
     private val learningRemoteDataSource = LearningRemoteDataSource(networkFactory)
 

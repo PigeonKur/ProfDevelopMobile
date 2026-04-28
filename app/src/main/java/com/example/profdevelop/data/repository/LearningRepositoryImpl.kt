@@ -44,7 +44,16 @@ class LearningRepositoryImpl(
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
         return remoteDataSource.getAchievements(baseUrl, session.accessToken, userId).map {
-            Achievement(it.id, it.title, it.description, it.icon, it.earnedAt)
+            Achievement(
+                id = it.id,
+                title = it.title,
+                description = it.description,
+                icon = it.icon,
+                earnedAt = it.earnedAt,
+                conditionKey = it.conditionKey,
+                conditionValue = it.conditionValue,
+                currentValue = it.currentValue
+            )
         }
     }
 

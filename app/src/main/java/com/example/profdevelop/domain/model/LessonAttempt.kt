@@ -51,6 +51,19 @@ data class Achievement(
     val id: Int,
     val title: String,
     val description: String?,
-    val icon: String?,
-    val earnedAt: String?
-)
+    val icon: String? = null,
+    val earnedAt: String? = null,
+    val conditionKey: String? = null,
+    val conditionValue: Int? = null,
+    val currentValue: Int? = null
+) {
+    val isEarned: Boolean get() = !earnedAt.isNullOrBlank()
+    val hasProgress: Boolean
+        get() = !isEarned && conditionValue != null && conditionValue > 0 && currentValue != null
+    val progressFraction: Float
+        get() = if (conditionValue != null && conditionValue > 0 && currentValue != null) {
+            (currentValue.coerceAtLeast(0).toFloat() / conditionValue.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+}
+
+

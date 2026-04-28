@@ -109,7 +109,10 @@ data class AchievementDto(
     @SerializedName("title") val title: String,
     @SerializedName("description") val description: String?,
     @SerializedName("icon") val icon: String?,
-    @SerializedName("earnedAt") val earnedAt: String?
+    @SerializedName("earnedAt") val earnedAt: String?,
+    @SerializedName("conditionKey") val conditionKey: String? = null,
+    @SerializedName("conditionValue") val conditionValue: Int? = null,
+    @SerializedName("currentValue") val currentValue: Int? = null
 )
 
 data class QuestionReviewDto(

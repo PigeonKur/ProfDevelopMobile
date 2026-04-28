@@ -16,10 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -52,7 +56,8 @@ import com.example.profdevelop.presentation.theme.BrandWarmSoft
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val user = state.user
@@ -65,12 +70,25 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = "Профиль",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = BrandText
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Профиль",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = BrandText,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "Настройки",
+                        tint = BrandText
+                    )
+                }
+            }
         }
 
         if (user == null) {
@@ -102,50 +120,78 @@ fun ProfileScreen(
 private fun ProfileHeader(user: UserProfile) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = BrandSurface),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         border = androidx.compose.foundation.BorderStroke(1.dp, BrandOutline)
     ) {
-        Row(
-            modifier = Modifier.padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(BrandGreenSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = user.fullName.firstOrNull()?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = BrandGreen
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = user.fullName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = BrandText
-                )
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BrandMuted
-                )
-                val sub = listOfNotNull(user.positionTitle, user.departmentName)
-                    .joinToString(" • ")
-                if (sub.isNotBlank()) {
-                    Text(
-                        text = sub,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = BrandText,
-                        modifier = Modifier.padding(top = 4.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(BrandGreen, Color(0xFF2E6A3A))
                     )
+                )
+                .padding(20.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.18f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = user.fullName.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFD4A000)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${user.level}",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = user.fullName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = user.email,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                        val sub = listOfNotNull(user.positionTitle, user.departmentName)
+                            .joinToString(" • ")
+                        if (sub.isNotBlank()) {
+                            Text(
+                                text = sub,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.95f),
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

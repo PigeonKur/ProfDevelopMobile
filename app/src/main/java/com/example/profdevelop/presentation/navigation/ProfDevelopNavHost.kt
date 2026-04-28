@@ -20,9 +20,13 @@ import com.example.profdevelop.presentation.screens.course.CourseViewModelFactor
 import com.example.profdevelop.presentation.screens.lesson.LessonScreen
 import com.example.profdevelop.presentation.screens.lesson.LessonViewModel
 import com.example.profdevelop.presentation.screens.lesson.LessonViewModelFactory
+import com.example.profdevelop.presentation.screens.settings.SettingsScreen
+import com.example.profdevelop.presentation.screens.settings.SettingsViewModel
 import com.example.profdevelop.presentation.screens.splash.SplashScreen
 import com.example.profdevelop.presentation.screens.splash.SplashViewModel
 import com.example.profdevelop.presentation.screens.splash.SplashViewModelFactory
+import com.example.profdevelop.presentation.util.Haptics
+import androidx.compose.runtime.LaunchedEffect
 import java.net.URLDecoder
 
 @Composable
@@ -30,6 +34,12 @@ fun ProfDevelopNavHost() {
     val context = LocalContext.current
     val module = remember { AppModule(context.applicationContext) }
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        module.settingsDataSource.flow.collect { settings ->
+            Haptics.enabled = settings.hapticsEnabled
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -88,7 +98,24 @@ fun ProfDevelopNavHost() {
                     navController.navigate(AppDestination.Login.route) {
                         popUpTo(AppDestination.Main.route) { inclusive = true }
                     }
+                },
+                onOpenSettings = {
+                    navController.navigate(AppDestination.Settings.route)
                 }
+            )
+        }
+
+        composable(AppDestination.Settings.route) {
+            val viewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModel.Factory(
+                    dataSource = module.settingsDataSource,
+                    getApiUrlUseCase = module.getApiUrlUseCase,
+                    updateApiUrlUseCase = module.updateApiUrlUseCase
+                )
+            )
+            SettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
             )
         }
 

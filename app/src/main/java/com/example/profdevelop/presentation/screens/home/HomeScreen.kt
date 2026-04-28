@@ -50,6 +50,7 @@ import com.example.profdevelop.R
 import java.time.LocalDate
 import com.example.profdevelop.domain.model.Lesson
 import com.example.profdevelop.domain.model.UserProfile
+import com.example.profdevelop.presentation.components.LessonPathNode
 import com.example.profdevelop.presentation.theme.BrandBackground
 import com.example.profdevelop.presentation.theme.BrandGreen
 import com.example.profdevelop.presentation.theme.BrandGreenSoft
@@ -78,7 +79,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     refreshToken: Int,
     onOpenCourse: (Int, String) -> Unit,
-    onOpenLesson: (Int, String) -> Unit
+    onOpenLesson: (Int, String) -> Unit,
+    onOpenProfile: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -111,7 +113,7 @@ fun HomeScreen(
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
                     item {
-                        TopBar(user = state.user)
+                        TopBar(user = state.user, onProfileClick = onOpenProfile)
                     }
 
                     val nextLesson = state.nextLesson
@@ -147,7 +149,7 @@ fun HomeScreen(
 
 
 @Composable
-private fun TopBar(user: UserProfile?) {
+private fun TopBar(user: UserProfile?, onProfileClick: () -> Unit) {
     val streakActive = isStreakActive(user?.lastActiveDate)
     val streakColor = if (streakActive) StreakOrange else StreakGray
     val streakBg = if (streakActive) StreakOrangeBg else StreakGrayBg
@@ -165,7 +167,8 @@ private fun TopBar(user: UserProfile?) {
             modifier = Modifier
                 .size(42.dp)
                 .clip(CircleShape)
-                .background(AvatarRingColor),
+                .background(AvatarRingColor)
+                .clickable(onClick = onProfileClick),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -285,7 +288,7 @@ private fun CourseSection(
         )
 
         chapter.lessons.forEachIndexed { index, lesson ->
-            CourseLessonNode(
+            LessonPathNode(
                 lesson = lesson,
                 index = index,
                 isLast = index == chapter.lessons.lastIndex,
@@ -311,96 +314,6 @@ private fun CourseDivider(title: String, progress: String) {
         )
         Text(text = title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text(text = progress, style = MaterialTheme.typography.bodyMedium, color = BrandMuted)
-    }
-}
-
-@Composable
-private fun CourseLessonNode(
-    lesson: Lesson,
-    index: Int,
-    isLast: Boolean,
-    onClick: () -> Unit
-) {
-    val horizontalOffset = when (index % 5) {
-        0 -> (-26).dp
-        1 -> 40.dp
-        2 -> 0.dp
-        3 -> (-40).dp
-        else -> 26.dp
-    }
-    val nodeColor = when {
-        lesson.isCompleted -> BrandGreen
-        lesson.isUnlocked  -> BrandWarm
-        else               -> BrandRouteLocked
-    }
-    val haloColor = when {
-        lesson.isCompleted -> BrandGreenSoft
-        lesson.isUnlocked  -> BrandWarmSoft
-        else               -> BrandSurface
-    }
-    val nodeText = when {
-        lesson.isCompleted -> R.drawable.approved
-        lesson.isUnlocked  -> "${lesson.orderIndex}"
-        else               -> "•"
-    }
-    val stepRotation = when (index % 5) {
-        0 -> 28f; 1 -> -34f; 2 -> 32f; 3 -> -30f; else -> 26f
-    }
-
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Column(
-            modifier = Modifier.offset(x = horizontalOffset),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .background(haloColor, CircleShape)
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(nodeColor, CircleShape)
-                        .clickable(
-                            enabled = lesson.isUnlocked || lesson.isCompleted,
-                            onClick = onClick
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when {
-                        lesson.isCompleted -> {
-                            Image(
-                                painter = painterResource(id = R.drawable.approved),
-                                contentDescription = "Пройден",
-                                modifier = Modifier.size(36.dp),
-
-                                colorFilter = ColorFilter.tint(Color.White)
-                            )
-                        }
-                        lesson.isUnlocked -> {
-                            Text(
-                                text = "${lesson.orderIndex}",
-                                color = Color.White,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        else -> {
-                            Icon(
-                                imageVector = Icons.Filled.Lock,
-                                contentDescription = "Заблокировано",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (!isLast) StepsConnector(rotation = stepRotation)
-        }
     }
 }
 
@@ -572,23 +485,4 @@ private fun formatDeadline(raw: String): String {
         val date = LocalDate.parse(raw.take(10))
         "%02d.%02d.%d".format(date.dayOfMonth, date.monthValue, date.year)
     }.getOrDefault(raw)
-}
-
-@Composable
-private fun StepsConnector(rotation: Float) {
-    Column(
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .rotate(rotation),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        repeat(4) {
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .background(BrandRouteDivider, CircleShape)
-            )
-        }
-    }
 }

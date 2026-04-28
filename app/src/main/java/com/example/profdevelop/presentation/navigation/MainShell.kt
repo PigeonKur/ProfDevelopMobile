@@ -4,6 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -13,9 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -46,15 +59,16 @@ import com.example.profdevelop.presentation.theme.BrandSurface
 private data class TabItem(
     val destination: AppDestination,
     val label: String,
-    val emoji: String
+    val iconActive: ImageVector,
+    val iconInactive: ImageVector
 )
 
 private val tabs = listOf(
-    TabItem(AppDestination.Home, "Главная", "🏠"),
-    TabItem(AppDestination.Practice, "Практика", "💪"),
-    TabItem(AppDestination.Quests, "Задания", "🎯"),
-    TabItem(AppDestination.Achievements, "Награды", "🏆"),
-    TabItem(AppDestination.Profile, "Профиль", "👤"),
+    TabItem(AppDestination.Home, "Главная", Icons.Filled.Home, Icons.Outlined.Home),
+    TabItem(AppDestination.Practice, "Практика", Icons.Filled.FitnessCenter, Icons.Outlined.FitnessCenter),
+    TabItem(AppDestination.Quests, "Задания", Icons.Filled.Flag, Icons.Outlined.Flag),
+    TabItem(AppDestination.Achievements, "Награды", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents),
+    TabItem(AppDestination.Profile, "Профиль", Icons.Filled.Person, Icons.Outlined.Person),
 )
 
 @Composable
@@ -63,7 +77,8 @@ fun MainShell(
     refreshToken: Int,
     onOpenCourse: (Int, String) -> Unit,
     onOpenLesson: (Int, String) -> Unit,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    onOpenSettings: () -> Unit = {}
 ) {
     val tabNav = rememberNavController()
 
@@ -95,7 +110,16 @@ fun MainShell(
                         viewModel = viewModel,
                         refreshToken = refreshToken,
                         onOpenCourse = onOpenCourse,
-                        onOpenLesson = onOpenLesson
+                        onOpenLesson = onOpenLesson,
+                        onOpenProfile = {
+                            tabNav.navigate(AppDestination.Profile.route) {
+                                popUpTo(tabNav.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
                     )
                 }
 
@@ -130,7 +154,11 @@ fun MainShell(
                             logoutUseCase = module.logoutUseCase
                         )
                     )
-                    ProfileScreen(viewModel = viewModel, onLoggedOut = onLoggedOut)
+                    ProfileScreen(
+                        viewModel = viewModel,
+                        onLoggedOut = onLoggedOut,
+                        onOpenSettings = onOpenSettings
+                    )
                 }
             }
         }
@@ -163,9 +191,10 @@ private fun BottomBar(navController: NavController) {
                     }
                 },
                 icon = {
-                    Text(
-                        text = tab.emoji,
-                        fontSize = 22.sp
+                    Icon(
+                        imageVector = if (selected) tab.iconActive else tab.iconInactive,
+                        contentDescription = tab.label,
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 label = {
