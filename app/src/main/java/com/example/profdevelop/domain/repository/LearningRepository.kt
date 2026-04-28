@@ -16,4 +16,5 @@ interface LearningRepository {
     suspend fun getAchievements(userId: Int): List<Achievement>
     suspend fun checkQuestion(answer: QuestionAttempt): QuestionCheckResult
     suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult
+    suspend fun getPracticeQuestions(limit: Int = 12): List<Question>
 }

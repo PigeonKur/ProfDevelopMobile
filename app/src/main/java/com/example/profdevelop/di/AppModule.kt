@@ -14,8 +14,10 @@ import com.example.profdevelop.domain.usecase.GetAssignedCoursesUseCase
 import com.example.profdevelop.domain.usecase.CheckQuestionUseCase
 import com.example.profdevelop.domain.usecase.GetLessonsUseCase
 import com.example.profdevelop.domain.usecase.GetQuestionsUseCase
+import com.example.profdevelop.domain.usecase.GetPracticeQuestionsUseCase
 import com.example.profdevelop.domain.usecase.GetStoredSessionUseCase
 import com.example.profdevelop.domain.usecase.LoginUseCase
+import com.example.profdevelop.domain.usecase.LogoutUseCase
 import com.example.profdevelop.domain.usecase.RestoreSessionUseCase
 import com.example.profdevelop.domain.usecase.SubmitLessonAttemptUseCase
 import com.example.profdevelop.domain.usecase.UpdateApiUrlUseCase
@@ -36,6 +38,7 @@ class AppModule(context: Context) {
     )
 
     val loginUseCase = LoginUseCase(authRepository)
+    val logoutUseCase = LogoutUseCase(authRepository)
     val restoreSessionUseCase = RestoreSessionUseCase(authRepository)
     val getStoredSessionUseCase = GetStoredSessionUseCase(authRepository)
     val getApiUrlUseCase = GetApiUrlUseCase(authRepository)
@@ -43,6 +46,7 @@ class AppModule(context: Context) {
     val getAssignedCoursesUseCase = GetAssignedCoursesUseCase(learningRepository)
     val getLessonsUseCase = GetLessonsUseCase(learningRepository)
     val getQuestionsUseCase = GetQuestionsUseCase(learningRepository)
+    val getPracticeQuestionsUseCase = GetPracticeQuestionsUseCase(learningRepository)
     val getAchievementsUseCase = GetAchievementsUseCase(learningRepository)
     val checkQuestionUseCase = CheckQuestionUseCase(learningRepository)
     val submitLessonAttemptUseCase = SubmitLessonAttemptUseCase(learningRepository)

@@ -88,6 +88,13 @@ class LearningRepositoryImpl(
         return result
     }
 
+    override suspend fun getPracticeQuestions(limit: Int): List<Question> {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        return remoteDataSource.getPracticeQuestions(baseUrl, session.accessToken, limit)
+            .map { it.toDomain() }
+    }
+
     private suspend fun requireSession() =
         localDataSource.getStoredSession() ?: error("Нет активной сессии")
 }

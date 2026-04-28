@@ -17,9 +17,6 @@ import com.example.profdevelop.presentation.screens.auth.LoginScreen
 import com.example.profdevelop.presentation.screens.course.CourseScreen
 import com.example.profdevelop.presentation.screens.course.CourseViewModel
 import com.example.profdevelop.presentation.screens.course.CourseViewModelFactory
-import com.example.profdevelop.presentation.screens.home.HomeScreen
-import com.example.profdevelop.presentation.screens.home.HomeViewModel
-import com.example.profdevelop.presentation.screens.home.HomeViewModelFactory
 import com.example.profdevelop.presentation.screens.lesson.LessonScreen
 import com.example.profdevelop.presentation.screens.lesson.LessonViewModel
 import com.example.profdevelop.presentation.screens.lesson.LessonViewModelFactory
@@ -45,7 +42,7 @@ fun ProfDevelopNavHost() {
             SplashScreen(
                 viewModel = viewModel,
                 onOpenHome = {
-                    navController.navigate(AppDestination.Home.route) {
+                    navController.navigate(AppDestination.Main.route) {
                         popUpTo(AppDestination.Splash.route) { inclusive = true }
                     }
                 },
@@ -66,34 +63,31 @@ fun ProfDevelopNavHost() {
             LoginScreen(
                 viewModel = viewModel,
                 onAuthorized = {
-                    navController.navigate(AppDestination.Home.route) {
+                    navController.navigate(AppDestination.Main.route) {
                         popUpTo(AppDestination.Login.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(AppDestination.Home.route) { backStackEntry ->
+        composable(AppDestination.Main.route) { backStackEntry ->
             val refreshToken = backStackEntry.savedStateHandle
                 .getStateFlow("refreshToken", 0)
                 .collectAsState()
                 .value
-            val viewModel: HomeViewModel = viewModel(
-                factory = HomeViewModelFactory(
-                    getAssignedCoursesUseCase = module.getAssignedCoursesUseCase,
-                    getLessonsUseCase = module.getLessonsUseCase,
-                    getStoredSessionUseCase = module.getStoredSessionUseCase,
-                    getAchievementsUseCase = module.getAchievementsUseCase
-                )
-            )
-            HomeScreen(
-                viewModel = viewModel,
+            MainShell(
+                module = module,
                 refreshToken = refreshToken,
                 onOpenCourse = { courseId, courseTitle ->
                     navController.navigate(AppDestination.courseRoute(courseId, courseTitle))
                 },
                 onOpenLesson = { lessonId, lessonTitle ->
                     navController.navigate(AppDestination.lessonRoute(lessonId, lessonTitle))
+                },
+                onLoggedOut = {
+                    navController.navigate(AppDestination.Login.route) {
+                        popUpTo(AppDestination.Main.route) { inclusive = true }
+                    }
                 }
             )
         }

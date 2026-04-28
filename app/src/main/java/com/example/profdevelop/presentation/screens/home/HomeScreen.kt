@@ -119,7 +119,6 @@ fun HomeScreen(
                         nextLesson?.let { add(HomePage.Continue(it)) }
                         state.chapters
                             .filter { it.course.isMandatory }
-                            .filter { nextLesson == null || it.course.id != nextLesson.courseId }
                             .sortedBy { it.course.deadline ?: "9999-12-31" }
                             .forEach { add(HomePage.Mandatory(it)) }
                     }

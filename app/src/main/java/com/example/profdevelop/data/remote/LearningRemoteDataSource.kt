@@ -48,6 +48,14 @@ class LearningRemoteDataSource(
         return createProgressApi(baseUrl, accessToken).submitLessonAttempt(request)
     }
 
+    suspend fun getPracticeQuestions(
+        baseUrl: String,
+        accessToken: String,
+        limit: Int
+    ): List<QuestionDto> {
+        return createProgressApi(baseUrl, accessToken).getPracticeQuestions(limit)
+    }
+
     private fun createCoursesApi(baseUrl: String, accessToken: String): CoursesApi =
         networkFactory.createRetrofit(baseUrl, accessToken).create(CoursesApi::class.java)
 
