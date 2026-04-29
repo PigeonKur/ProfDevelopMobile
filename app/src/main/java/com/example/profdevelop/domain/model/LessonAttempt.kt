@@ -83,5 +83,8 @@ data class LeaderboardEntry(
 
 data class XpBoostStatus(
     val isActive: Boolean,
-    val remainingSeconds: Int
+    val remainingSeconds: Int,
+    val lessonsToday: Int = 0,
+    val xpToday: Int = 0,
+    val isEligible: Boolean = false
 )

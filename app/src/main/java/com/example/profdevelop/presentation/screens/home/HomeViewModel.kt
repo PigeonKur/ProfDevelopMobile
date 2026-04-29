@@ -34,6 +34,7 @@ class HomeViewModel(
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
     private var boostTickerJob: Job? = null
+    private var activatingBoost: Boolean = false
 
     fun load() {
         viewModelScope.launch {
@@ -88,15 +89,32 @@ class HomeViewModel(
     }
 
     fun activateBoost() {
+        if (activatingBoost) return
+        if (_state.value.boostSecondsLeft > 0) return
+        if (!_state.value.boostEligible) {
+            _state.update { it.copy(boostMessage = "Сначала пройди 3 урока или набери 60 XP сегодня.") }
+            return
+        }
+        activatingBoost = true
+        _state.update { it.copy(boostActivating = true) }
         viewModelScope.launch {
             runCatching { activateXpBoostUseCase() }
                 .onSuccess { status ->
                     startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
-                    _state.update { it.copy(boostMessage = "🚀 2x XP включён на 30 минут!") }
+                    _state.update {
+                        it.copy(
+                            boostMessage = "🚀 2x XP включён на 30 минут!",
+                            boostLessonsToday = status.lessonsToday,
+                            boostXpToday = status.xpToday,
+                            boostEligible = status.isEligible
+                        )
+                    }
                 }
                 .onFailure {
                     _state.update { it.copy(boostMessage = "Не удалось включить буст. Попробуй позже.") }
                 }
+            _state.update { it.copy(boostActivating = false) }
+            activatingBoost = false
         }
     }
 
@@ -110,6 +128,13 @@ class HomeViewModel(
                 .onSuccess { status ->
                     if (status.isActive) startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
                     else stopBoostTicker()
+                    _state.update {
+                        it.copy(
+                            boostLessonsToday = status.lessonsToday,
+                            boostXpToday = status.xpToday,
+                            boostEligible = status.isEligible
+                        )
+                    }
                 }
         }
     }
@@ -157,9 +182,14 @@ data class HomeUiState(
     val nextLesson: HomeNextLesson? = null,
     val error: String? = null,
     val boostSecondsLeft: Int = 0,
-    val boostMessage: String? = null
+    val boostMessage: String? = null,
+    val boostActivating: Boolean = false,
+    val boostLessonsToday: Int = 0,
+    val boostXpToday: Int = 0,
+    val boostEligible: Boolean = false
 ) {
     val boostActive: Boolean get() = boostSecondsLeft > 0
+    val showBoostBanner: Boolean get() = boostActive || boostEligible
 }
 
 class HomeViewModelFactory(

@@ -126,11 +126,14 @@ fun HomeScreen(
                         TopBar(user = state.user, onProfileClick = onOpenProfile)
                     }
 
-                    item {
-                        BoostBanner(
-                            secondsLeft = state.boostSecondsLeft,
-                            onActivate = { viewModel.activateBoost() }
-                        )
+                    if (state.showBoostBanner) {
+                        item {
+                            BoostBanner(
+                                secondsLeft = state.boostSecondsLeft,
+                                isActivating = state.boostActivating,
+                                onActivate = { viewModel.activateBoost() }
+                            )
+                        }
                     }
 
                     val nextLesson = state.nextLesson
@@ -176,7 +179,7 @@ private fun TopBar(user: UserProfile?, onProfileClick: () -> Unit) {
             .fillMaxWidth()
             .background(BrandBackground)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -506,6 +509,7 @@ private fun formatDeadline(raw: String): String {
 @Composable
 private fun BoostBanner(
     secondsLeft: Int,
+    isActivating: Boolean,
     onActivate: () -> Unit
 ) {
     val active = secondsLeft > 0
@@ -520,7 +524,7 @@ private fun BoostBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(enabled = !active, onClick = onActivate),
+            .clickable(enabled = !active && !isActivating, onClick = onActivate),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -552,7 +556,11 @@ private fun BoostBanner(
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = if (active) formatBoostTime(secondsLeft) else "Включить",
+                    text = when {
+                        active -> formatBoostTime(secondsLeft)
+                        isActivating -> "..."
+                        else -> "Включить"
+                    },
                     color = Color.White,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 14.sp

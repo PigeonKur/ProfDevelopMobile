@@ -147,7 +147,10 @@ fun MainShell(
                 }
 
                 composable(AppDestination.Quests.route) {
-                    QuestsScreen(getStoredSessionUseCase = module.getStoredSessionUseCase)
+                    QuestsScreen(
+                        getStoredSessionUseCase = module.getStoredSessionUseCase,
+                        getXpBoostStatusUseCase = module.getXpBoostStatusUseCase
+                    )
                 }
 
                 composable(AppDestination.Achievements.route) {

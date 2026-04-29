@@ -35,7 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.profdevelop.R
 import com.example.profdevelop.domain.model.UserProfile
+import com.example.profdevelop.domain.model.XpBoostStatus
 import com.example.profdevelop.domain.usecase.GetStoredSessionUseCase
+import com.example.profdevelop.domain.usecase.GetXpBoostStatusUseCase
 import com.example.profdevelop.presentation.theme.BrandBackground
 import com.example.profdevelop.presentation.theme.BrandGreen
 import com.example.profdevelop.presentation.theme.BrandGreenSoft
@@ -46,12 +48,23 @@ import com.example.profdevelop.presentation.theme.BrandText
 import com.example.profdevelop.presentation.theme.BrandWarmSoft
 
 @Composable
-fun QuestsScreen(getStoredSessionUseCase: GetStoredSessionUseCase) {
+fun QuestsScreen(
+    getStoredSessionUseCase: GetStoredSessionUseCase,
+    getXpBoostStatusUseCase: GetXpBoostStatusUseCase
+) {
     val user by produceState<UserProfile?>(initialValue = null) {
         value = getStoredSessionUseCase()?.user
     }
 
-    val items = remember(user) { buildQuests(user) }
+    // Прогресс дневных заданий считается на сервере (boost-status даёт
+    // lessonsToday и xpToday, посчитанные с 00:00 UTC).
+    val daily by produceState<XpBoostStatus?>(initialValue = null, user) {
+        if (user == null) return@produceState
+        runCatching { getXpBoostStatusUseCase() }
+            .onSuccess { value = it }
+    }
+
+    val items = remember(user, daily) { buildQuests(user, daily) }
 
     LazyColumn(
         modifier = Modifier
@@ -92,13 +105,15 @@ private data class Quest(
     val emoji: String
 )
 
-private fun buildQuests(user: UserProfile?): List<Quest> {
-    val isToday = isStreakActiveFor(user?.lastActiveDate)
+private fun buildQuests(user: UserProfile?, daily: XpBoostStatus?): List<Quest> {
+    val lessonsToday = daily?.lessonsToday ?: 0
+    val xpToday = daily?.xpToday ?: 0
+    val streakActive = isStreakActiveFor(user?.lastActiveDate)
     return listOf(
         Quest(
             title = "Пройди 1 урок сегодня",
             description = "Главное условие, чтобы серия росла",
-            current = if (isToday) 1 else 0,
+            current = lessonsToday.coerceAtMost(1),
             target = 1,
             xp = 10,
             emoji = "🎯"
@@ -106,7 +121,7 @@ private fun buildQuests(user: UserProfile?): List<Quest> {
         Quest(
             title = "Продли серию",
             description = "Просто пройди любой урок на 100% — огонёк загорится снова",
-            current = if (isToday && (user?.streakDays ?: 0) > 0) 1 else 0,
+            current = if (streakActive && (user?.streakDays ?: 0) > 0) 1 else 0,
             target = 1,
             xp = 15,
             emoji = "🔥"
@@ -114,7 +129,7 @@ private fun buildQuests(user: UserProfile?): List<Quest> {
         Quest(
             title = "Заработай 30 XP сегодня",
             description = "Один-два хороших урока и задание выполнено",
-            current = (user?.totalXp ?: 0).coerceAtMost(30).let { if (isToday) it else 0 },
+            current = xpToday.coerceAtMost(30),
             target = 30,
             xp = 20,
             emoji = "✨"

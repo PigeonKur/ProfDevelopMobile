@@ -245,7 +245,10 @@ fun QuestionCheckResultDto.toDomain(): QuestionCheckResult = QuestionCheckResult
 data class XpBoostStatusDto(
     @SerializedName("isActive") val isActive: Boolean,
     @SerializedName("activeUntil") val activeUntil: String?,
-    @SerializedName("remainingSeconds") val remainingSeconds: Int
+    @SerializedName("remainingSeconds") val remainingSeconds: Int,
+    @SerializedName("lessonsToday") val lessonsToday: Int = 0,
+    @SerializedName("xpToday") val xpToday: Int = 0,
+    @SerializedName("isEligible") val isEligible: Boolean = false
 )
 
 data class ActivateBoostRequestDto(

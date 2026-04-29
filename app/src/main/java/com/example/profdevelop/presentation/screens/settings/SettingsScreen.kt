@@ -299,17 +299,6 @@ fun SettingsScreen(
                 }
             }
 
-            item {
-                Text(
-                    text = "AML Academy • dev build",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BrandMuted,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
         }
 
         SnackbarHost(
