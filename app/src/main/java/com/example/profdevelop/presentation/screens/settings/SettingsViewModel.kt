@@ -17,8 +17,11 @@ data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
     val apiUrl: String = "",
     val isSaving: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val apiUrlError: String? = null
 )
+
+private val URL_REGEX = Regex("^https?://[^\\s]+\\S$")
 
 class SettingsViewModel(
     private val dataSource: SettingsPreferencesDataSource,
@@ -42,7 +45,6 @@ class SettingsViewModel(
     }
 
     fun toggleHaptics(value: Boolean) = viewModelScope.launch { dataSource.setHaptics(value) }
-    fun toggleSound(value: Boolean) = viewModelScope.launch { dataSource.setSound(value) }
     fun toggleReminder(value: Boolean) = viewModelScope.launch { dataSource.setReminderEnabled(value) }
     fun setReminderHour(value: Int) = viewModelScope.launch { dataSource.setReminderHour(value) }
     fun setDailyXpGoal(value: Int) = viewModelScope.launch { dataSource.setDailyXpGoal(value) }
@@ -50,13 +52,20 @@ class SettingsViewModel(
     fun toggleAnalytics(value: Boolean) = viewModelScope.launch { dataSource.setAnalytics(value) }
 
     fun updateApiUrl(url: String) {
-        _state.update { it.copy(apiUrl = url) }
+        _state.update { it.copy(apiUrl = url, apiUrlError = null) }
     }
 
     fun saveApiUrl() {
+        val raw = state.value.apiUrl.trim()
+        if (!URL_REGEX.matches(raw)) {
+            _state.update {
+                it.copy(apiUrlError = "Адрес должен начинаться с http:// или https:// и не содержать пробелов")
+            }
+            return
+        }
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true) }
-            updateApiUrlUseCase(state.value.apiUrl)
+            _state.update { it.copy(isSaving = true, apiUrlError = null) }
+            updateApiUrlUseCase(raw)
             val saved = getApiUrlUseCase()
             _state.update {
                 it.copy(

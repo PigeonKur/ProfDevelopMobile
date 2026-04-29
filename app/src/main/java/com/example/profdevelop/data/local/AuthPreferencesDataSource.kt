@@ -70,11 +70,14 @@ class AuthPreferencesDataSource(private val context: Context) {
             prefs[Keys.email] = session.user.email
             prefs[Keys.role] = session.user.role
             session.user.positionTitle?.let { prefs[Keys.positionTitle] = it }
+                ?: prefs.remove(Keys.positionTitle)
             session.user.departmentName?.let { prefs[Keys.departmentName] = it }
+                ?: prefs.remove(Keys.departmentName)
             prefs[Keys.totalXp] = session.user.totalXp
             prefs[Keys.level] = session.user.level
             prefs[Keys.streakDays] = session.user.streakDays
             session.user.avatarUrl?.let { prefs[Keys.avatarUrl] = it }
+                ?: prefs.remove(Keys.avatarUrl)
             session.user.lastActiveDate?.let { prefs[Keys.lastActiveDate] = it }
                 ?: prefs.remove(Keys.lastActiveDate)
         }

@@ -76,5 +76,12 @@ data class LeaderboardEntry(
     val positionTitle: String?,
     val totalXp: Int,
     val level: Int,
-    val streakDays: Int
+    val streakDays: Int,
+    val tier: String? = null,
+    val weeklyXp: Int = 0
+)
+
+data class XpBoostStatus(
+    val isActive: Boolean,
+    val remainingSeconds: Int
 )

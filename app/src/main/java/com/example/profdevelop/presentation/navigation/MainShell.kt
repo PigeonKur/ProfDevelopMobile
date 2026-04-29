@@ -103,7 +103,9 @@ fun MainShell(
                             getAssignedCoursesUseCase = module.getAssignedCoursesUseCase,
                             getLessonsUseCase = module.getLessonsUseCase,
                             getStoredSessionUseCase = module.getStoredSessionUseCase,
-                            getAchievementsUseCase = module.getAchievementsUseCase
+                            getAchievementsUseCase = module.getAchievementsUseCase,
+                            getXpBoostStatusUseCase = module.getXpBoostStatusUseCase,
+                            activateXpBoostUseCase = module.activateXpBoostUseCase
                         )
                     )
                     HomeScreen(
@@ -130,7 +132,18 @@ fun MainShell(
                             checkQuestionUseCase = module.checkQuestionUseCase
                         )
                     )
-                    PracticeScreen(viewModel = viewModel)
+                    PracticeScreen(
+                        viewModel = viewModel,
+                        onClose = {
+                            tabNav.navigate(AppDestination.Home.route) {
+                                popUpTo(tabNav.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
                 }
 
                 composable(AppDestination.Quests.route) {

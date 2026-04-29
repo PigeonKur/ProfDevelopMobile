@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -72,12 +71,26 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(state.message) {
         val msg = state.message
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
             viewModel.consumeMessage()
+        }
+    }
+
+    // Перепланируем worker, если поменялся тумблер «Напоминание» или час.
+    LaunchedEffect(state.settings.dailyReminderEnabled, state.settings.dailyReminderHour) {
+        if (state.settings.dailyReminderEnabled) {
+            com.example.profdevelop.notifications.StreakReminderWorker.schedule(
+                context.applicationContext, state.settings.dailyReminderHour
+            )
+        } else {
+            com.example.profdevelop.notifications.StreakReminderWorker.cancel(
+                context.applicationContext
+            )
         }
     }
 
@@ -206,7 +219,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Звук и тактильность") }
+            item { SectionHeader("Тактильность") }
             item {
                 ToggleRow(
                     icon = Icons.Filled.Vibration,
@@ -214,15 +227,6 @@ fun SettingsScreen(
                     subtitle = "Тактильный отклик на ответы и серии",
                     checked = state.settings.hapticsEnabled,
                     onChecked = viewModel::toggleHaptics
-                )
-            }
-            item {
-                ToggleRow(
-                    icon = Icons.Filled.VolumeUp,
-                    title = "Звуки",
-                    subtitle = "Звуковые эффекты в уроках",
-                    checked = state.settings.soundEnabled,
-                    onChecked = viewModel::toggleSound
                 )
             }
 
@@ -270,6 +274,10 @@ fun SettingsScreen(
                             value = state.apiUrl,
                             onValueChange = viewModel::updateApiUrl,
                             singleLine = true,
+                            isError = state.apiUrlError != null,
+                            supportingText = state.apiUrlError?.let {
+                                { Text(it, color = BrandDanger) }
+                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Button(

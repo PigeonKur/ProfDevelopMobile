@@ -6,27 +6,34 @@ import androidx.lifecycle.viewModelScope
 import com.example.profdevelop.domain.model.Course
 import com.example.profdevelop.domain.model.Lesson
 import com.example.profdevelop.domain.model.UserProfile
+import com.example.profdevelop.domain.usecase.ActivateXpBoostUseCase
 import com.example.profdevelop.domain.usecase.GetAchievementsUseCase
 import com.example.profdevelop.domain.usecase.GetAssignedCoursesUseCase
 import com.example.profdevelop.domain.usecase.GetLessonsUseCase
 import com.example.profdevelop.domain.usecase.GetStoredSessionUseCase
+import com.example.profdevelop.domain.usecase.GetXpBoostStatusUseCase
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val getAssignedCoursesUseCase: GetAssignedCoursesUseCase,
     private val getLessonsUseCase: GetLessonsUseCase,
     private val getStoredSessionUseCase: GetStoredSessionUseCase,
-    private val getAchievementsUseCase: GetAchievementsUseCase
+    private val getAchievementsUseCase: GetAchievementsUseCase,
+    private val getXpBoostStatusUseCase: GetXpBoostStatusUseCase,
+    private val activateXpBoostUseCase: ActivateXpBoostUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
-
-    init {
-        load()
-    }
+    private var boostTickerJob: Job? = null
 
     fun load() {
         viewModelScope.launch {
@@ -35,14 +42,24 @@ class HomeViewModel(
                 val session = getStoredSessionUseCase()
                 val user = session?.user
                 val courses = getAssignedCoursesUseCase().sortedBy { it.id }
-                val chapters = courses.mapIndexed { index, course ->
-                    HomeChapter(
-                        index = index,
-                        course = course,
-                        lessons = getLessonsUseCase(course.id)
-                    )
+
+                // Грузим уроки всех курсов и список ачивок параллельно — раньше
+                // это были N+1 последовательных запросов, заметно тормозило.
+                val (chapters, achievementsCount) = coroutineScope {
+                    val lessonsDeferred = courses.mapIndexed { index, course ->
+                        async {
+                            HomeChapter(
+                                index = index,
+                                course = course,
+                                lessons = getLessonsUseCase(course.id)
+                            )
+                        }
+                    }
+                    val achievementsDeferred = async {
+                        user?.id?.let { getAchievementsUseCase(it).size } ?: 0
+                    }
+                    lessonsDeferred.awaitAll() to achievementsDeferred.await()
                 }
-                val achievementsCount = user?.id?.let { getAchievementsUseCase(it).size } ?: 0
                 val nextLesson = chapters
                     .firstNotNullOfOrNull { chapter ->
                         chapter.lessons.firstOrNull { !it.isCompleted && it.isUnlocked }?.let { lesson ->
@@ -55,10 +72,12 @@ class HomeViewModel(
                     user = user,
                     achievementsCount = achievementsCount,
                     chapters = chapters,
-                    nextLesson = nextLesson
+                    nextLesson = nextLesson,
+                    boostSecondsLeft = _state.value.boostSecondsLeft
                 )
             }.onSuccess {
                 _state.value = it
+                refreshBoostStatus()
             }.onFailure {
                 _state.value = HomeUiState(
                     isLoading = false,
@@ -66,6 +85,53 @@ class HomeViewModel(
                 )
             }
         }
+    }
+
+    fun activateBoost() {
+        viewModelScope.launch {
+            runCatching { activateXpBoostUseCase() }
+                .onSuccess { status ->
+                    startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
+                    _state.update { it.copy(boostMessage = "🚀 2x XP включён на 30 минут!") }
+                }
+                .onFailure {
+                    _state.update { it.copy(boostMessage = "Не удалось включить буст. Попробуй позже.") }
+                }
+        }
+    }
+
+    fun consumeBoostMessage() {
+        _state.update { it.copy(boostMessage = null) }
+    }
+
+    private fun refreshBoostStatus() {
+        viewModelScope.launch {
+            runCatching { getXpBoostStatusUseCase() }
+                .onSuccess { status ->
+                    if (status.isActive) startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
+                    else stopBoostTicker()
+                }
+        }
+    }
+
+    private fun startBoostTicker(initialSeconds: Int) {
+        boostTickerJob?.cancel()
+        _state.update { it.copy(boostSecondsLeft = initialSeconds) }
+        if (initialSeconds <= 0) return
+        boostTickerJob = viewModelScope.launch {
+            var left = initialSeconds
+            while (left > 0) {
+                delay(1000L)
+                left -= 1
+                _state.update { it.copy(boostSecondsLeft = left.coerceAtLeast(0)) }
+            }
+        }
+    }
+
+    private fun stopBoostTicker() {
+        boostTickerJob?.cancel()
+        boostTickerJob = null
+        _state.update { it.copy(boostSecondsLeft = 0) }
     }
 }
 
@@ -89,14 +155,20 @@ data class HomeUiState(
     val achievementsCount: Int = 0,
     val chapters: List<HomeChapter> = emptyList(),
     val nextLesson: HomeNextLesson? = null,
-    val error: String? = null
-)
+    val error: String? = null,
+    val boostSecondsLeft: Int = 0,
+    val boostMessage: String? = null
+) {
+    val boostActive: Boolean get() = boostSecondsLeft > 0
+}
 
 class HomeViewModelFactory(
     private val getAssignedCoursesUseCase: GetAssignedCoursesUseCase,
     private val getLessonsUseCase: GetLessonsUseCase,
     private val getStoredSessionUseCase: GetStoredSessionUseCase,
-    private val getAchievementsUseCase: GetAchievementsUseCase
+    private val getAchievementsUseCase: GetAchievementsUseCase,
+    private val getXpBoostStatusUseCase: GetXpBoostStatusUseCase,
+    private val activateXpBoostUseCase: ActivateXpBoostUseCase
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -104,7 +176,9 @@ class HomeViewModelFactory(
             getAssignedCoursesUseCase,
             getLessonsUseCase,
             getStoredSessionUseCase,
-            getAchievementsUseCase
+            getAchievementsUseCase,
+            getXpBoostStatusUseCase,
+            activateXpBoostUseCase
         ) as T
     }
 }

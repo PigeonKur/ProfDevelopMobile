@@ -46,6 +46,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.ColorFilter
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.example.profdevelop.R
 import java.time.LocalDate
 import com.example.profdevelop.domain.model.Lesson
@@ -83,9 +85,17 @@ fun HomeScreen(
     onOpenProfile: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(refreshToken) {
         if (refreshToken > 0) viewModel.load()
+    }
+
+    LaunchedEffect(state.boostMessage) {
+        state.boostMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.consumeBoostMessage()
+        }
     }
 
     Box(
@@ -114,6 +124,13 @@ fun HomeScreen(
                 ) {
                     item {
                         TopBar(user = state.user, onProfileClick = onOpenProfile)
+                    }
+
+                    item {
+                        BoostBanner(
+                            secondsLeft = state.boostSecondsLeft,
+                            onActivate = { viewModel.activateBoost() }
+                        )
                     }
 
                     val nextLesson = state.nextLesson
@@ -485,4 +502,69 @@ private fun formatDeadline(raw: String): String {
         val date = LocalDate.parse(raw.take(10))
         "%02d.%02d.%d".format(date.dayOfMonth, date.monthValue, date.year)
     }.getOrDefault(raw)
+}
+@Composable
+private fun BoostBanner(
+    secondsLeft: Int,
+    onActivate: () -> Unit
+) {
+    val active = secondsLeft > 0
+    val containerColor = if (active) Color(0xFFFFF3E0) else Color(0xFFE8F5E9)
+    val borderColor = if (active) Color(0xFFFFB74D) else BrandGreen
+    val accent = if (active) Color(0xFFE65100) else BrandGreen
+    val title = if (active) "🚀 Двойной XP" else "🚀 Двойной XP"
+    val subtitle = if (active) "Зарабатывай вдвое больше — каждое действие даёт 2x XP."
+                   else "Активируй на 30 минут и получи 2x XP за каждый урок."
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(enabled = !active, onClick = onActivate),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    color = accent
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    color = BrandMuted
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    text = if (active) formatBoostTime(secondsLeft) else "Включить",
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+}
+
+private fun formatBoostTime(seconds: Int): String {
+    val s = seconds.coerceAtLeast(0)
+    val m = s / 60
+    val sec = s % 60
+    return "%02d:%02d".format(m, sec)
 }

@@ -14,5 +14,7 @@ interface UsersApi {
     ): List<AchievementDto>
 
     @GET("api/users/leaderboard")
-    suspend fun getLeaderboard(): List<LeaderboardEntryDto>
+    suspend fun getLeaderboard(
+        @Query("tier") tier: String? = null
+    ): List<LeaderboardEntryDto>
 }

@@ -6,5 +6,6 @@ import com.example.profdevelop.domain.repository.LearningRepository
 class GetLeaderboardUseCase(
     private val repository: LearningRepository
 ) {
-    suspend operator fun invoke(): List<LeaderboardEntry> = repository.getLeaderboard()
+    suspend operator fun invoke(tier: String? = null): List<LeaderboardEntry> =
+        repository.getLeaderboard(tier)
 }

@@ -48,7 +48,10 @@ import com.example.profdevelop.presentation.theme.BrandWarm
 import com.example.profdevelop.presentation.theme.BrandWarmSoft
 
 @Composable
-fun PracticeScreen(viewModel: PracticeViewModel) {
+fun PracticeScreen(
+    viewModel: PracticeViewModel,
+    onClose: () -> Unit = {}
+) {
     val state by viewModel.state.collectAsState()
 
     Box(
@@ -66,7 +69,8 @@ fun PracticeScreen(viewModel: PracticeViewModel) {
             state.finished -> SummaryView(
                 correct = state.correctCount,
                 total = state.total,
-                onAgain = viewModel::load
+                onAgain = viewModel::load,
+                onClose = onClose
             )
             else -> QuestionView(state, viewModel)
         }
@@ -236,45 +240,72 @@ private fun FeedbackBar(feedback: PracticeFeedback) {
 }
 
 @Composable
-private fun SummaryView(correct: Int, total: Int, onAgain: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+private fun SummaryView(correct: Int, total: Int, onAgain: () -> Unit, onClose: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .background(BrandGreen, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("★", color = Color.White, fontSize = MaterialTheme.typography.displaySmall.fontSize)
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "Тренировка завершена",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = BrandText
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Правильных ответов: $correct из $total",
+                style = MaterialTheme.typography.bodyLarge,
+                color = BrandMuted
+            )
+            Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = onAgain,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BrandGreen)
+            ) {
+                Text("Ещё раз", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onClose,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BrandSurface)
+            ) {
+                Text("К главной", color = BrandText, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        // Крестик в правом-верхнем углу — быстрый выход на главную.
         Box(
             modifier = Modifier
-                .size(96.dp)
-                .background(BrandGreen, CircleShape),
+                .align(Alignment.TopEnd)
+                .padding(top = 24.dp, end = 16.dp)
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(BrandSurface)
+                .clickable(onClick = onClose),
             contentAlignment = Alignment.Center
         ) {
-            Text("★", color = Color.White, fontSize = MaterialTheme.typography.displaySmall.fontSize)
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "Тренировка завершена",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.ExtraBold,
-            color = BrandText
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Правильных ответов: $correct из $total",
-            style = MaterialTheme.typography.bodyLarge,
-            color = BrandMuted
-        )
-        Spacer(Modifier.height(28.dp))
-        Button(
-            onClick = onAgain,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen)
-        ) {
-            Text("Ещё раз", color = Color.White, fontWeight = FontWeight.Bold)
+            Text("✕", color = BrandText, fontWeight = FontWeight.ExtraBold)
         }
     }
 }

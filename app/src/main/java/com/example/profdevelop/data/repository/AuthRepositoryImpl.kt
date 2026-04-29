@@ -7,6 +7,7 @@ import com.example.profdevelop.data.remote.dto.toDomain
 import com.example.profdevelop.domain.model.UserSession
 import com.example.profdevelop.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.firstOrNull
+import retrofit2.HttpException
 
 class AuthRepositoryImpl(
     private val remoteDataSource: AuthRemoteDataSource,
@@ -61,9 +62,18 @@ class AuthRepositoryImpl(
 
             localDataSource.saveSession(merged)
             merged
-        }.getOrElse {
-            localDataSource.clearSession()
-            null
+        }.getOrElse { error ->
+            // 401/403 — токен реально протух, чистим. Любая сетевая ошибка
+            // (нет интернета, API не запущен, таймаут) — возвращаем
+            // существующую сессию, чтобы юзер продолжил в офлайне без вылогина.
+            val isAuthError = error is HttpException &&
+                (error.code() == 401 || error.code() == 403)
+            if (isAuthError) {
+                localDataSource.clearSession()
+                null
+            } else {
+                stored
+            }
         }
     }
 

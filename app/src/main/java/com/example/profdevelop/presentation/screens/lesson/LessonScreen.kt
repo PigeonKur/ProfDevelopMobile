@@ -107,16 +107,20 @@ fun LessonScreen(
             }
 
             question != null -> {
-                Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                ) {
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .statusBarsPadding(),
+                            .fillMaxWidth()
+                            .weight(1f),
                         contentPadding = PaddingValues(
                             start = 20.dp,
                             top = 28.dp,
                             end = 20.dp,
-                            bottom = 150.dp
+                            bottom = 24.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(22.dp)
                     ) {
@@ -264,44 +268,15 @@ fun LessonScreen(
                             state.error?.let {
                                 Text(it, color = BrandDanger)
                             }
-
-                            when {
-                                question.type != "truefalse" || state.feedback != null -> {
-                                    Button(
-                                        onClick = {
-                                            if (state.feedback != null) {
-                                                viewModel.continueAfterFeedback()
-                                            } else {
-                                                viewModel.checkCurrentQuestion()
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        enabled = !state.isChecking && !state.isSubmitting
-                                    ) {
-                                        when {
-                                            state.isChecking || state.isSubmitting -> {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.size(18.dp),
-                                                    strokeWidth = 2.dp,
-                                                    color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            }
-
-                                            state.feedback != null -> Text("Продолжить")
-                                            else -> Text("Проверить")
-                                        }
-                                    }
-                                }
-
-                                else -> Unit
-                            }
                         }
                     }
 
-                    state.feedback?.let { feedback ->
+                    // Sticky-плашка снизу: либо фидбэк после ответа, либо
+                    // обычная кнопка «Проверить».
+                    val feedback = state.feedback
+                    if (feedback != null) {
                         Card(
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
                                 .fillMaxWidth()
                                 .heightIn(min = 96.dp, max = feedbackMaxHeight)
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -314,7 +289,7 @@ fun LessonScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp, vertical = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
                                     text = if (feedback.isCorrect) "Верно" else "Неверно",
@@ -326,6 +301,43 @@ fun LessonScreen(
                                     text = feedback.message,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
+                                Button(
+                                    onClick = { viewModel.continueAfterFeedback() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !state.isChecking && !state.isSubmitting,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (feedback.isCorrect) BrandGreen else BrandDanger
+                                    )
+                                ) {
+                                    if (state.isChecking || state.isSubmitting) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Text("Дальше", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    } else if (question.type != "truefalse") {
+                        Button(
+                            onClick = { viewModel.checkCurrentQuestion() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            enabled = !state.isChecking && !state.isSubmitting,
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen)
+                        ) {
+                            if (state.isChecking || state.isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color.White
+                                )
+                            } else {
+                                Text("Проверить", color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -358,415 +370,3 @@ private fun AnswerItem(
     }
 }
 
-@Composable
-private fun MatchingBoard(
-    question: Question,
-    selectedMatches: Map<Int, Int>,
-    onSelect: (Int, Int) -> Unit
-) {
-    var activeLeftId by remember(question.id) { mutableIntStateOf(question.matchingPairs.firstOrNull()?.id ?: -1) }
-    val expandedLeft = remember(question.id) { mutableStateMapOf<Int, Boolean>() }
-    val expandedRight = remember(question.id) { mutableStateMapOf<Int, Boolean>() }
-    // Перемешиваем правую колонку один раз на вопрос, чтобы правильные ответы
-    // не оказывались параллельны левой колонке.
-    val shuffledRight = remember(question.id) {
-        val pairs = question.matchingPairs
-        if (pairs.size < 2) {
-            pairs
-        } else {
-            generateSequence { pairs.shuffled() }
-                .first { shuffled ->
-                    shuffled.withIndex().any { (i, p) -> pairs[i].id != p.id }
-                }
-        }
-    }
-    val palette = listOf(
-        Color(0xFFEAF2FF),
-        Color(0xFFFFF4D9),
-        Color(0xFFF4E7DA),
-        Color(0xFFE8F8E6),
-        Color(0xFFF6E7FF),
-        Color(0xFFFFE8E0)
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "Выберите элемент слева, затем соответствие справа.",
-            style = MaterialTheme.typography.bodySmall,
-            color = BrandMuted
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = "Левая колонка",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandMuted
-                )
-
-                question.matchingPairs.forEachIndexed { index, pair ->
-                    val pairColor = selectedMatches[pair.id]?.let { palette[index % palette.size] }
-                    val selectedRightId = selectedMatches[pair.id]
-                    ExpandableMatchingCard(
-                        text = pair.leftText,
-                        isExpanded = expandedLeft[pair.id] == true,
-                        isActive = activeLeftId == pair.id && selectedRightId == null,
-                        backgroundColor = pairColor,
-                        assignmentText = selectedRightId?.let { rightId ->
-                            question.matchingPairs.firstOrNull { it.id == rightId }?.rightText
-                        },
-                        onToggleExpand = {
-                            expandedLeft[pair.id] = !(expandedLeft[pair.id] ?: false)
-                        },
-                        onClick = { activeLeftId = pair.id }
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = "Правая колонка",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandMuted
-                )
-
-                shuffledRight.forEach { pair ->
-                    val usedByLeftId = selectedMatches.entries.firstOrNull { it.value == pair.id }?.key
-                    val leftIndex = question.matchingPairs.indexOfFirst { it.id == usedByLeftId }
-                    val pairColor = if (leftIndex >= 0) palette[leftIndex % palette.size] else null
-
-                    ExpandableMatchingCard(
-                        text = pair.rightText,
-                        isExpanded = expandedRight[pair.id] == true,
-                        isActive = false,
-                        backgroundColor = pairColor,
-                        assignmentText = usedByLeftId?.let { leftId ->
-                            question.matchingPairs.firstOrNull { it.id == leftId }?.leftText
-                        },
-                        onToggleExpand = {
-                            expandedRight[pair.id] = !(expandedRight[pair.id] ?: false)
-                        },
-                        onClick = {
-                            if (activeLeftId != -1) {
-                                onSelect(activeLeftId, pair.id)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ExpandableMatchingCard(
-    text: String,
-    isExpanded: Boolean,
-    isActive: Boolean,
-    backgroundColor: Color?,
-    assignmentText: String?,
-    onToggleExpand: () -> Unit,
-    onClick: () -> Unit
-) {
-    var hasOverflow by remember(text) { mutableStateOf(false) }
-    val background = backgroundColor ?: if (isActive) BrandWarmSoft else BrandSurface
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = background),
-        shape = RoundedCornerShape(18.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = text,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 4,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
-                    lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph
-                ),
-                fontWeight = FontWeight.Medium,
-                onTextLayout = { hasOverflow = it.hasVisualOverflow }
-            )
-
-            assignmentText?.let {
-                Text(
-                    text = "Связано: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BrandMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            if (hasOverflow || isExpanded) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = if (isExpanded) "Свернуть" else "Подробнее",
-                        modifier = Modifier.clickable(onClick = onToggleExpand),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isActive) BrandWarm else BrandMuted,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LessonResultView(
-    title: String,
-    state: LessonUiState,
-    onFinish: () -> Unit
-) {
-    val result = state.result ?: return
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val xpProgress = remember(result.xpEarned) { Animatable(0f) }
-    val xpCounter by remember(result.xpEarned) {
-        derivedStateOf { (xpProgress.value * result.xpEarned).toInt() }
-    }
-    val streakScale = remember(result.streakDays) { Animatable(1f) }
-
-    val perfect = result.score == result.maxScore && result.maxScore > 0
-    val accentColor = if (perfect) BrandGreen else BrandWarm
-    val accentSoft = if (perfect) BrandGreenSoft else BrandWarmSoft
-    val streakIconColor = if (result.streakActive) StreakOrange else StreakGray
-
-    LaunchedEffect(result.xpEarned, result.streakIncreased) {
-        delay(150)
-        scope.launch {
-            // Заполняем XP-шкалу с лёгкими тиками-вибрациями.
-            val ticks = 6
-            val durationPerTick = 80L
-            repeat(ticks) { i ->
-                xpProgress.animateTo(
-                    targetValue = (i + 1f) / ticks,
-                    animationSpec = tween(durationMillis = durationPerTick.toInt())
-                )
-                Haptics.xpTick(context)
-            }
-        }
-        if (result.streakIncreased) {
-            delay(450)
-            Haptics.streakFlame(context)
-            streakScale.animateTo(1.25f, tween(120))
-            streakScale.animateTo(1f, tween(180))
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BrandBackground)
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .background(accentColor, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.approved),
-                contentDescription = "Пройден",
-                modifier = Modifier.size(48.dp),
-                colorFilter = ColorFilter.tint(Color.White)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = if (perfect) "Урок пройден!" else "Урок завершён",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = BrandText
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(accentSoft)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-            Text(
-                text = title,
-                color = accentColor,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = BrandSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BrandOutline)
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ResultStatBlock(
-                        title = "Точность",
-                        value = if (result.maxScore > 0) {
-                            "${(result.score * 100 / result.maxScore)}%"
-                        } else "—",
-                        valueColor = accentColor
-                    )
-                    ResultStatBlock(
-                        title = "Серия",
-                        value = "${result.streakDays}",
-                        valueColor = streakIconColor,
-                        iconRes = R.drawable.burn,
-                        iconTint = streakIconColor,
-                        scale = streakScale.value
-                    )
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.xp),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "Полученные XP",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = BrandMuted,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        Text(
-                            text = "+$xpCounter",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = XpGold
-                        )
-                    }
-                    LinearProgressIndicator(
-                        progress = { xpProgress.value },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(10.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        color = XpGold,
-                        trackColor = accentSoft
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Button(
-            onClick = onFinish,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp)
-                .height(54.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-        ) {
-            Text(
-                text = "К маршруту",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
-    }
-}
-
-private val StreakOrange = Color(0xFFFF9600)
-private val StreakGray = Color(0xFF9DA89E)
-private val XpGold = Color(0xFFD4A000)
-
-@Composable
-private fun ResultStatBlock(
-    title: String,
-    value: String,
-    valueColor: Color,
-    iconRes: Int? = null,
-    iconTint: Color? = null,
-    scale: Float = 1f
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = BrandMuted,
-            fontWeight = FontWeight.SemiBold
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            if (iconRes != null) {
-                Image(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        },
-                    colorFilter = iconTint?.let { ColorFilter.tint(it) }
-                )
-            }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = valueColor
-            )
-        }
-    }
-}

@@ -123,7 +123,9 @@ data class LeaderboardEntryDto(
     @SerializedName("positionTitle") val positionTitle: String?,
     @SerializedName("totalXp") val totalXp: Int?,
     @SerializedName("level") val level: Int?,
-    @SerializedName("streakDays") val streakDays: Int?
+    @SerializedName("streakDays") val streakDays: Int?,
+    @SerializedName("tier") val tier: String? = null,
+    @SerializedName("weeklyXp") val weeklyXp: Int? = null
 )
 
 data class QuestionReviewDto(
@@ -238,4 +240,14 @@ fun QuestionCheckResultDto.toDomain(): QuestionCheckResult = QuestionCheckResult
     correctMatchingPairs = correctMatchingPairs.map {
         MatchingAnswer(it.leftPairId, it.rightPairId)
     }
+)
+
+data class XpBoostStatusDto(
+    @SerializedName("isActive") val isActive: Boolean,
+    @SerializedName("activeUntil") val activeUntil: String?,
+    @SerializedName("remainingSeconds") val remainingSeconds: Int
+)
+
+data class ActivateBoostRequestDto(
+    @SerializedName("durationMinutes") val durationMinutes: Int
 )

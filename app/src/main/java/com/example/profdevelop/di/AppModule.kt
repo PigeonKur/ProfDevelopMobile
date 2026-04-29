@@ -23,6 +23,8 @@ import com.example.profdevelop.domain.usecase.LogoutUseCase
 import com.example.profdevelop.domain.usecase.RestoreSessionUseCase
 import com.example.profdevelop.domain.usecase.SubmitLessonAttemptUseCase
 import com.example.profdevelop.domain.usecase.UpdateApiUrlUseCase
+import com.example.profdevelop.domain.usecase.GetXpBoostStatusUseCase
+import com.example.profdevelop.domain.usecase.ActivateXpBoostUseCase
 
 class AppModule(context: Context) {
     private val networkFactory = NetworkFactory()
@@ -54,4 +56,6 @@ class AppModule(context: Context) {
     val getLeaderboardUseCase = GetLeaderboardUseCase(learningRepository)
     val checkQuestionUseCase = CheckQuestionUseCase(learningRepository)
     val submitLessonAttemptUseCase = SubmitLessonAttemptUseCase(learningRepository)
+    val getXpBoostStatusUseCase = GetXpBoostStatusUseCase(learningRepository)
+    val activateXpBoostUseCase = ActivateXpBoostUseCase(learningRepository)
 }

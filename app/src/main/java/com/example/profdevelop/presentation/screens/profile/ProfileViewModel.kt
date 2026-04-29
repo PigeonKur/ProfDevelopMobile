@@ -30,10 +30,10 @@ class ProfileViewModel(
         loadLeaderboard()
     }
 
-    fun loadLeaderboard() {
+    fun loadLeaderboard(tier: String? = _state.value.tierFilter) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(leaderboardLoading = true)
-            runCatching { getLeaderboardUseCase() }
+            _state.value = _state.value.copy(leaderboardLoading = true, tierFilter = tier)
+            runCatching { getLeaderboardUseCase(tier) }
                 .onSuccess { list ->
                     _state.value = _state.value.copy(
                         leaderboard = list,
@@ -50,6 +50,10 @@ class ProfileViewModel(
         }
     }
 
+    fun selectTier(tier: String?) {
+        loadLeaderboard(tier)
+    }
+
     fun logout(onDone: () -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoggingOut = true)
@@ -64,7 +68,8 @@ data class ProfileUiState(
     val isLoggingOut: Boolean = false,
     val leaderboard: List<LeaderboardEntry> = emptyList(),
     val leaderboardLoading: Boolean = false,
-    val leaderboardError: String? = null
+    val leaderboardError: String? = null,
+    val tierFilter: String? = null
 )
 
 class ProfileViewModelFactory(

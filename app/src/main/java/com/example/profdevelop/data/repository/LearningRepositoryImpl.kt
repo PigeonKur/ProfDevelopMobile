@@ -14,6 +14,7 @@ import com.example.profdevelop.domain.model.QuestionAttempt
 import com.example.profdevelop.domain.model.QuestionCheckResult
 import com.example.profdevelop.domain.model.Achievement
 import com.example.profdevelop.domain.model.LeaderboardEntry
+import com.example.profdevelop.domain.model.XpBoostStatus
 import com.example.profdevelop.domain.repository.LearningRepository
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -105,10 +106,10 @@ class LearningRepositoryImpl(
             .map { it.toDomain() }
     }
 
-    override suspend fun getLeaderboard(): List<LeaderboardEntry> {
+    override suspend fun getLeaderboard(tier: String?): List<LeaderboardEntry> {
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
-        return remoteDataSource.getLeaderboard(baseUrl, session.accessToken).map {
+        return remoteDataSource.getLeaderboard(baseUrl, session.accessToken, tier).map {
             LeaderboardEntry(
                 rank = (it.rank ?: 0L).toInt(),
                 userId = it.userId,
@@ -117,9 +118,25 @@ class LearningRepositoryImpl(
                 positionTitle = it.positionTitle,
                 totalXp = it.totalXp ?: 0,
                 level = it.level ?: 1,
-                streakDays = it.streakDays ?: 0
+                streakDays = it.streakDays ?: 0,
+                tier = it.tier,
+                weeklyXp = it.weeklyXp ?: 0
             )
         }
+    }
+
+    override suspend fun getXpBoostStatus(): XpBoostStatus {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        val dto = remoteDataSource.getXpBoostStatus(baseUrl, session.accessToken)
+        return XpBoostStatus(dto.isActive, dto.remainingSeconds)
+    }
+
+    override suspend fun activateXpBoost(durationMinutes: Int): XpBoostStatus {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        val dto = remoteDataSource.activateXpBoost(baseUrl, session.accessToken, durationMinutes)
+        return XpBoostStatus(dto.isActive, dto.remainingSeconds)
     }
 
     private suspend fun requireSession() =

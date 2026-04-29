@@ -1,10 +1,12 @@
 package com.example.profdevelop.data.remote.api
 
+import com.example.profdevelop.data.remote.dto.ActivateBoostRequestDto
 import com.example.profdevelop.data.remote.dto.LessonAttemptRequestDto
 import com.example.profdevelop.data.remote.dto.LessonResultDto
 import com.example.profdevelop.data.remote.dto.QuestionCheckRequestDto
 import com.example.profdevelop.data.remote.dto.QuestionCheckResultDto
 import com.example.profdevelop.data.remote.dto.QuestionDto
+import com.example.profdevelop.data.remote.dto.XpBoostStatusDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -19,4 +21,10 @@ interface ProgressApi {
 
     @GET("api/progress/practice-questions")
     suspend fun getPracticeQuestions(@Query("limit") limit: Int = 12): List<QuestionDto>
+
+    @GET("api/progress/xp-boost")
+    suspend fun getXpBoostStatus(): XpBoostStatusDto
+
+    @POST("api/progress/activate-boost")
+    suspend fun activateXpBoost(@Body request: ActivateBoostRequestDto): XpBoostStatusDto
 }

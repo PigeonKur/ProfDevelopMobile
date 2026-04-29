@@ -33,8 +33,28 @@ class LearningRemoteDataSource(
         return createUsersApi(baseUrl, accessToken).getAchievements(userId)
     }
 
-    suspend fun getLeaderboard(baseUrl: String, accessToken: String): List<LeaderboardEntryDto> {
-        return createUsersApi(baseUrl, accessToken).getLeaderboard()
+    suspend fun getLeaderboard(
+        baseUrl: String,
+        accessToken: String,
+        tier: String? = null
+    ): List<LeaderboardEntryDto> {
+        return createUsersApi(baseUrl, accessToken).getLeaderboard(tier)
+    }
+
+    suspend fun getXpBoostStatus(
+        baseUrl: String,
+        accessToken: String
+    ): com.example.profdevelop.data.remote.dto.XpBoostStatusDto {
+        return createProgressApi(baseUrl, accessToken).getXpBoostStatus()
+    }
+
+    suspend fun activateXpBoost(
+        baseUrl: String,
+        accessToken: String,
+        durationMinutes: Int = 30
+    ): com.example.profdevelop.data.remote.dto.XpBoostStatusDto {
+        return createProgressApi(baseUrl, accessToken)
+            .activateXpBoost(com.example.profdevelop.data.remote.dto.ActivateBoostRequestDto(durationMinutes))
     }
 
     suspend fun checkQuestion(

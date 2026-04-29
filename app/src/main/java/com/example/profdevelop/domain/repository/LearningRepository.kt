@@ -9,6 +9,7 @@ import com.example.profdevelop.domain.model.QuestionAttempt
 import com.example.profdevelop.domain.model.QuestionCheckResult
 import com.example.profdevelop.domain.model.Achievement
 import com.example.profdevelop.domain.model.LeaderboardEntry
+import com.example.profdevelop.domain.model.XpBoostStatus
 
 interface LearningRepository {
     suspend fun getAssignedCourses(): List<Course>
@@ -18,5 +19,7 @@ interface LearningRepository {
     suspend fun checkQuestion(answer: QuestionAttempt): QuestionCheckResult
     suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult
     suspend fun getPracticeQuestions(limit: Int = 12): List<Question>
-    suspend fun getLeaderboard(): List<LeaderboardEntry>
+    suspend fun getLeaderboard(tier: String? = null): List<LeaderboardEntry>
+    suspend fun getXpBoostStatus(): XpBoostStatus
+    suspend fun activateXpBoost(durationMinutes: Int = 30): XpBoostStatus
 }
