@@ -210,12 +210,18 @@ private fun QuestCard(quest: Quest) {
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(id = R.drawable.xp),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(if (done) BrandGreen else BrandMuted)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(if (done) BrandGreen else Color(0xFFE7EEE8), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.xp),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Text(
                     text = "+${quest.xp}",
                     style = MaterialTheme.typography.labelLarge,
