@@ -115,6 +115,17 @@ data class AchievementDto(
     @SerializedName("currentValue") val currentValue: Int? = null
 )
 
+data class LeaderboardEntryDto(
+    @SerializedName("rank") val rank: Long?,
+    @SerializedName("userId") val userId: Int,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("avatarUrl") val avatarUrl: String?,
+    @SerializedName("positionTitle") val positionTitle: String?,
+    @SerializedName("totalXp") val totalXp: Int?,
+    @SerializedName("level") val level: Int?,
+    @SerializedName("streakDays") val streakDays: Int?
+)
+
 data class QuestionReviewDto(
     @SerializedName("questionId") val questionId: Int,
     @SerializedName("isCorrect") val isCorrect: Boolean,

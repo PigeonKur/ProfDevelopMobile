@@ -13,6 +13,7 @@ import com.example.profdevelop.domain.model.Question
 import com.example.profdevelop.domain.model.QuestionAttempt
 import com.example.profdevelop.domain.model.QuestionCheckResult
 import com.example.profdevelop.domain.model.Achievement
+import com.example.profdevelop.domain.model.LeaderboardEntry
 import com.example.profdevelop.domain.repository.LearningRepository
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -102,6 +103,23 @@ class LearningRepositoryImpl(
         val baseUrl = localDataSource.getApiUrl()
         return remoteDataSource.getPracticeQuestions(baseUrl, session.accessToken, limit)
             .map { it.toDomain() }
+    }
+
+    override suspend fun getLeaderboard(): List<LeaderboardEntry> {
+        val session = requireSession()
+        val baseUrl = localDataSource.getApiUrl()
+        return remoteDataSource.getLeaderboard(baseUrl, session.accessToken).map {
+            LeaderboardEntry(
+                rank = (it.rank ?: 0L).toInt(),
+                userId = it.userId,
+                fullName = it.fullName,
+                avatarUrl = it.avatarUrl,
+                positionTitle = it.positionTitle,
+                totalXp = it.totalXp ?: 0,
+                level = it.level ?: 1,
+                streakDays = it.streakDays ?: 0
+            )
+        }
     }
 
     private suspend fun requireSession() =

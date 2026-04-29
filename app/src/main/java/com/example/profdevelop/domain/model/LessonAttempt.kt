@@ -67,3 +67,14 @@ data class Achievement(
 }
 
 
+
+data class LeaderboardEntry(
+    val rank: Int,
+    val userId: Int,
+    val fullName: String,
+    val avatarUrl: String?,
+    val positionTitle: String?,
+    val totalXp: Int,
+    val level: Int,
+    val streakDays: Int
+)

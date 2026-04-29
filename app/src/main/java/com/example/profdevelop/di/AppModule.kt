@@ -10,6 +10,7 @@ import com.example.profdevelop.data.repository.LearningRepositoryImpl
 import com.example.profdevelop.domain.repository.AuthRepository
 import com.example.profdevelop.domain.repository.LearningRepository
 import com.example.profdevelop.domain.usecase.GetAchievementsUseCase
+import com.example.profdevelop.domain.usecase.GetLeaderboardUseCase
 import com.example.profdevelop.domain.usecase.GetApiUrlUseCase
 import com.example.profdevelop.domain.usecase.GetAssignedCoursesUseCase
 import com.example.profdevelop.domain.usecase.CheckQuestionUseCase
@@ -50,6 +51,7 @@ class AppModule(context: Context) {
     val getQuestionsUseCase = GetQuestionsUseCase(learningRepository)
     val getPracticeQuestionsUseCase = GetPracticeQuestionsUseCase(learningRepository)
     val getAchievementsUseCase = GetAchievementsUseCase(learningRepository)
+    val getLeaderboardUseCase = GetLeaderboardUseCase(learningRepository)
     val checkQuestionUseCase = CheckQuestionUseCase(learningRepository)
     val submitLessonAttemptUseCase = SubmitLessonAttemptUseCase(learningRepository)
 }

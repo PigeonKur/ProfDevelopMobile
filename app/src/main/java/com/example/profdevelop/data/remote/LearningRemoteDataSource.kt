@@ -5,6 +5,7 @@ import com.example.profdevelop.data.remote.api.ProgressApi
 import com.example.profdevelop.data.remote.api.UsersApi
 import com.example.profdevelop.data.remote.dto.AchievementDto
 import com.example.profdevelop.data.remote.dto.CourseDto
+import com.example.profdevelop.data.remote.dto.LeaderboardEntryDto
 import com.example.profdevelop.data.remote.dto.LessonAttemptRequestDto
 import com.example.profdevelop.data.remote.dto.LessonDto
 import com.example.profdevelop.data.remote.dto.LessonResultDto
@@ -30,6 +31,10 @@ class LearningRemoteDataSource(
 
     suspend fun getAchievements(baseUrl: String, accessToken: String, userId: Int): List<AchievementDto> {
         return createUsersApi(baseUrl, accessToken).getAchievements(userId)
+    }
+
+    suspend fun getLeaderboard(baseUrl: String, accessToken: String): List<LeaderboardEntryDto> {
+        return createUsersApi(baseUrl, accessToken).getLeaderboard()
     }
 
     suspend fun checkQuestion(

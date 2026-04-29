@@ -495,9 +495,12 @@ private fun ExpandableMatchingCard(
         ) {
             Text(
                 text = text,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                maxLines = if (isExpanded) Int.MAX_VALUE else 4,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
+                    lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph
+                ),
                 fontWeight = FontWeight.Medium,
                 onTextLayout = { hasOverflow = it.hasVisualOverflow }
             )

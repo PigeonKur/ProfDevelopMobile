@@ -26,7 +26,13 @@ import com.example.profdevelop.presentation.screens.splash.SplashScreen
 import com.example.profdevelop.presentation.screens.splash.SplashViewModel
 import com.example.profdevelop.presentation.screens.splash.SplashViewModelFactory
 import com.example.profdevelop.presentation.util.Haptics
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import com.example.profdevelop.data.local.AppSettings
 import java.net.URLDecoder
 
 @Composable
@@ -35,12 +41,21 @@ fun ProfDevelopNavHost() {
     val module = remember { AppModule(context.applicationContext) }
     val navController = rememberNavController()
 
-    LaunchedEffect(Unit) {
-        module.settingsDataSource.flow.collect { settings ->
-            Haptics.enabled = settings.hapticsEnabled
-        }
+    val settings: AppSettings by module.settingsDataSource.flow
+        .collectAsState(initial = AppSettings())
+
+    LaunchedEffect(settings.hapticsEnabled) {
+        Haptics.enabled = settings.hapticsEnabled
     }
 
+    val baseDensity = LocalDensity.current
+    val scaledDensity = if (settings.largeText) {
+        Density(baseDensity.density, baseDensity.fontScale * 1.2f)
+    } else {
+        baseDensity
+    }
+
+    CompositionLocalProvider(LocalDensity provides scaledDensity) {
     NavHost(
         navController = navController,
         startDestination = AppDestination.Splash.route
@@ -144,7 +159,8 @@ fun ProfDevelopNavHost() {
                 refreshToken = refreshToken,
                 onOpenLesson = { lessonId, lessonTitle ->
                     navController.navigate(AppDestination.lessonRoute(lessonId, lessonTitle))
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -177,6 +193,7 @@ fun ProfDevelopNavHost() {
                 }
             )
         }
+    }
     }
 }
 

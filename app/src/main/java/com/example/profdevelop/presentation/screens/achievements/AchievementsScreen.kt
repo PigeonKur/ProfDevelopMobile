@@ -129,16 +129,17 @@ private fun AchievementCard(item: Achievement) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(232.dp)
             .border(1.dp, cardBorder, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -162,7 +163,9 @@ private fun AchievementCard(item: Achievement) {
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = titleColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
 
             if (!item.description.isNullOrBlank()) {
@@ -171,12 +174,14 @@ private fun AchievementCard(item: Achievement) {
                     style = MaterialTheme.typography.bodySmall,
                     color = descColor,
                     textAlign = TextAlign.Center,
-                    maxLines = 3
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
+            Spacer(Modifier.weight(1f))
+
             if (item.isEarned) {
-                Spacer(Modifier.height(2.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(999.dp))
@@ -191,7 +196,6 @@ private fun AchievementCard(item: Achievement) {
                     )
                 }
             } else if (item.hasProgress) {
-                Spacer(Modifier.height(2.dp))
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)

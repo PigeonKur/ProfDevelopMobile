@@ -151,7 +151,8 @@ fun MainShell(
                     val viewModel: ProfileViewModel = viewModel(
                         factory = ProfileViewModelFactory(
                             getStoredSessionUseCase = module.getStoredSessionUseCase,
-                            logoutUseCase = module.logoutUseCase
+                            logoutUseCase = module.logoutUseCase,
+                            getLeaderboardUseCase = module.getLeaderboardUseCase
                         )
                     )
                     ProfileScreen(

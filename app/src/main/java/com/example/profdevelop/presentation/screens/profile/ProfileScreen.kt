@@ -98,6 +98,15 @@ fun ProfileScreen(
             item { StatsBlock(user) }
             item { LevelProgress(user) }
             item {
+                LeaderboardSection(
+                    currentUserId = user.id,
+                    entries = state.leaderboard,
+                    isLoading = state.leaderboardLoading,
+                    error = state.leaderboardError,
+                    onRetry = { viewModel.loadLeaderboard() }
+                )
+            }
+            item {
                 OutlinedButton(
                     onClick = { viewModel.logout(onLoggedOut) },
                     enabled = !state.isLoggingOut,
@@ -246,22 +255,29 @@ private fun StatChip(
         colors = CardDefaults.cardColors(containerColor = background)
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 14.dp, horizontal = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 10.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                colorFilter = ColorFilter.tint(iconTint)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = BrandText
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Image(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    colorFilter = ColorFilter.tint(iconTint)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = BrandText
+                )
+            }
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -324,4 +340,227 @@ private fun UserProfile.isStreakActive(): Boolean {
     return runCatching {
         java.time.LocalDate.parse(date.take(10)) == java.time.LocalDate.now()
     }.getOrDefault(false)
+}
+
+@Composable
+private fun LeaderboardSection(
+    currentUserId: Int,
+    entries: List<com.example.profdevelop.domain.model.LeaderboardEntry>,
+    isLoading: Boolean,
+    error: String?,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Лидерборд",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = BrandText,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "Кто впереди",
+                style = MaterialTheme.typography.labelSmall,
+                color = BrandMuted
+            )
+        }
+
+        when {
+            isLoading && entries.isEmpty() -> Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandSurface)
+            ) {
+                Text(
+                    text = "Загружаем...",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    color = BrandMuted
+                )
+            }
+            error != null && entries.isEmpty() -> Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandDangerSoft)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Не удалось загрузить лидерборд",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BrandDanger,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Сравним прогресс с коллегами, как только появится сеть.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BrandMuted
+                    )
+                    OutlinedButton(onClick = onRetry) {
+                        Text("Повторить", color = BrandDanger, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            entries.isEmpty() -> Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = BrandSurface)
+            ) {
+                Text(
+                    text = "Пока никого нет — будь первым!",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    color = BrandMuted
+                )
+            }
+            else -> Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                entries.take(10).forEach { entry ->
+                    LeaderboardRow(entry = entry, isMe = entry.userId == currentUserId)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardRow(
+    entry: com.example.profdevelop.domain.model.LeaderboardEntry,
+    isMe: Boolean
+) {
+    val containerColor = when {
+        isMe -> BrandGreenSoft
+        entry.rank == 1 -> Color(0xFFFFF4D6)
+        else -> BrandSurface
+    }
+    val rankBg = when (entry.rank) {
+        1 -> Color(0xFFD4A000)
+        2 -> Color(0xFF9DA89E)
+        3 -> Color(0xFFCD7F32)
+        else -> BrandOutline
+    }
+    val rankText = if (entry.rank == 0) "—" else "#${entry.rank}"
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(rankBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = rankText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = entry.fullName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandText,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isMe) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(BrandGreen)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "ВЫ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                }
+                if (!entry.positionTitle.isNullOrBlank()) {
+                    Text(
+                        text = entry.positionTitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BrandMuted,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.xp),
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        colorFilter = ColorFilter.tint(Color(0xFFD4A000))
+                    )
+                    Text(
+                        text = "${entry.totalXp}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = BrandText
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.burn),
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        colorFilter = ColorFilter.tint(
+                            if (entry.streakDays > 0) Color(0xFFFF9600) else Color(0xFF9DA89E)
+                        )
+                    )
+                    Text(
+                        text = "${entry.streakDays}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BrandMuted,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
 }
