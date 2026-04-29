@@ -49,7 +49,7 @@ class SettingsViewModel(
     fun setReminderHour(value: Int) = viewModelScope.launch { dataSource.setReminderHour(value) }
     fun setDailyXpGoal(value: Int) = viewModelScope.launch { dataSource.setDailyXpGoal(value) }
     fun toggleLargeText(value: Boolean) = viewModelScope.launch { dataSource.setLargeText(value) }
-    fun toggleAnalytics(value: Boolean) = viewModelScope.launch { dataSource.setAnalytics(value) }
+
 
     fun updateApiUrl(url: String) {
         _state.update { it.copy(apiUrl = url, apiUrlError = null) }

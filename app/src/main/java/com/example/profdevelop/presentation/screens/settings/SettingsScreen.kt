@@ -241,17 +241,6 @@ fun SettingsScreen(
                 )
             }
 
-            item { SectionHeader("Конфиденциальность") }
-            item {
-                ToggleRow(
-                    icon = Icons.Filled.Share,
-                    title = "Анонимная аналитика",
-                    subtitle = "Помогает делать приложение лучше",
-                    checked = state.settings.analyticsEnabled,
-                    onChecked = viewModel::toggleAnalytics
-                )
-            }
-
             item { SectionHeader("Сервер") }
             item {
                 SettingsCard {
