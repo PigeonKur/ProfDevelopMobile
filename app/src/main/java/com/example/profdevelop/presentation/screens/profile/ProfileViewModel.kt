@@ -23,10 +23,19 @@ class ProfileViewModel(
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
     init {
+        refreshSession()
+        loadLeaderboard()
+    }
+
+    fun refreshSession() {
         viewModelScope.launch {
             val session = getStoredSessionUseCase()
             _state.value = _state.value.copy(user = session?.user)
         }
+    }
+
+    fun refresh() {
+        refreshSession()
         loadLeaderboard()
     }
 

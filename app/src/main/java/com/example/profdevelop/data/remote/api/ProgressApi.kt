@@ -23,7 +23,7 @@ interface ProgressApi {
     suspend fun getPracticeQuestions(@Query("limit") limit: Int = 12): List<QuestionDto>
 
     @GET("api/progress/xp-boost")
-    suspend fun getXpBoostStatus(): XpBoostStatusDto
+    suspend fun getXpBoostStatus(@Query("dailyXpGoal") dailyXpGoal: Int? = null): XpBoostStatusDto
 
     @POST("api/progress/activate-boost")
     suspend fun activateXpBoost(@Body request: ActivateBoostRequestDto): XpBoostStatusDto

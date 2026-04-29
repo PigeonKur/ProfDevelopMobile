@@ -6,12 +6,12 @@ import com.example.profdevelop.domain.repository.LearningRepository
 class GetXpBoostStatusUseCase(
     private val repository: LearningRepository
 ) {
-    suspend operator fun invoke(): XpBoostStatus = repository.getXpBoostStatus()
+    suspend operator fun invoke(dailyXpGoal: Int? = null): XpBoostStatus = repository.getXpBoostStatus(dailyXpGoal)
 }
 
 class ActivateXpBoostUseCase(
     private val repository: LearningRepository
 ) {
-    suspend operator fun invoke(durationMinutes: Int = 30): XpBoostStatus =
-        repository.activateXpBoost(durationMinutes)
+    suspend operator fun invoke(durationMinutes: Int = 30, dailyXpGoal: Int? = null): XpBoostStatus =
+        repository.activateXpBoost(durationMinutes, dailyXpGoal)
 }

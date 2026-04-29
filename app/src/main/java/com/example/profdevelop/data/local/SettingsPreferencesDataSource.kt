@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -24,7 +25,8 @@ data class AppSettings(
     val dailyReminderEnabled: Boolean = true,
     val dailyReminderHour: Int = 19,
     val dailyXpGoal: Int = 30,
-    val largeText: Boolean = false
+    val largeText: Boolean = false,
+    val lastDailyGoalCelebrateDate: String? = null
 )
 
 class SettingsPreferencesDataSource(private val context: Context) {
@@ -36,6 +38,7 @@ class SettingsPreferencesDataSource(private val context: Context) {
         val reminderHour = intPreferencesKey("daily_reminder_hour")
         val dailyXpGoal = intPreferencesKey("daily_xp_goal")
         val largeText = booleanPreferencesKey("large_text")
+        val lastDailyGoalCelebrateDate = stringPreferencesKey("last_daily_goal_celebrate_date")
     }
 
     val flow: Flow<AppSettings> = context.settingsPreferences.data
@@ -60,6 +63,12 @@ class SettingsPreferencesDataSource(private val context: Context) {
     suspend fun setLargeText(value: Boolean) =
         context.settingsPreferences.edit { it[Keys.largeText] = value }.let { Unit }
 
+    suspend fun setLastDailyGoalCelebrateDate(value: String?) =
+        context.settingsPreferences.edit { preferences ->
+            if (value.isNullOrBlank()) preferences.remove(Keys.lastDailyGoalCelebrateDate)
+            else preferences[Keys.lastDailyGoalCelebrateDate] = value
+        }.let { Unit }
+
     suspend fun resetAll() {
         context.settingsPreferences.edit { it.clear() }
     }
@@ -70,6 +79,7 @@ class SettingsPreferencesDataSource(private val context: Context) {
         dailyReminderEnabled = preferences[Keys.reminderEnabled] ?: true,
         dailyReminderHour = preferences[Keys.reminderHour] ?: 19,
         dailyXpGoal = preferences[Keys.dailyXpGoal] ?: 30,
-        largeText = preferences[Keys.largeText] ?: false
+        largeText = preferences[Keys.largeText] ?: false,
+        lastDailyGoalCelebrateDate = preferences[Keys.lastDailyGoalCelebrateDate]
     )
 }

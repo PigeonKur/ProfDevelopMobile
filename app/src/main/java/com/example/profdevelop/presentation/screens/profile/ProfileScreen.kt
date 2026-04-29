@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -56,11 +57,16 @@ import com.example.profdevelop.presentation.theme.BrandWarmSoft
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
+    refreshToken: Int,
     onLoggedOut: () -> Unit,
     onOpenSettings: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val user = state.user
+
+    LaunchedEffect(refreshToken) {
+        viewModel.refresh()
+    }
 
     LazyColumn(
         modifier = Modifier

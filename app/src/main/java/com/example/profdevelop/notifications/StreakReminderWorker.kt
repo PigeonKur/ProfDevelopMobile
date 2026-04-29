@@ -11,30 +11,22 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.profdevelop.MainActivity
 import com.example.profdevelop.R
 import com.example.profdevelop.data.local.AuthPreferencesDataSource
 import com.example.profdevelop.data.local.SettingsPreferencesDataSource
-import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
 
-/**
- * Раз в день проверяет — если у пользователя сегодня ещё не было активности и
- * есть текущая серия (огонёк горит), показываем нотификацию «Серия в опасности 😱»,
- * чтобы он успел зайти и пройти урок до 24:00. Расписание управляется
- * настройкой "Напоминание" + час в Settings.
- */
 class StreakReminderWorker(
     context: Context,
     params: WorkerParameters
@@ -42,8 +34,9 @@ class StreakReminderWorker(
 
     override suspend fun doWork(): Result {
         val ctx = applicationContext
-
         val settings = SettingsPreferencesDataSource(ctx).flow.first()
+
+        if (settings.dailyReminderEnabled) schedule(ctx, settings.dailyReminderHour) else cancel(ctx)
         if (!settings.dailyReminderEnabled) return Result.success()
 
         val auth = AuthPreferencesDataSource(ctx).getStoredSession() ?: return Result.success()
@@ -84,10 +77,10 @@ class StreakReminderWorker(
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
             .setSmallIcon(R.drawable.burn)
             .setContentTitle("Серия x$streakDays под угрозой")
-            .setContentText("Осталось мало времени \uD83D\uDE31 Заскочи на 5 минут, чтобы продлить огонёк.")
+            .setContentText("Осталось мало времени. Зайди и пройди урок, чтобы сохранить серию.")
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Осталось мало времени \uD83D\uDE31 До конца дня всего пара часов — пройди один урок на 100%, чтобы серия не сгорела."
+                    "До конца дня осталось немного времени. Пройди один урок на 100%, чтобы серия не сгорела."
                 )
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -112,20 +105,13 @@ class StreakReminderWorker(
 
         fun schedule(context: Context, hourOfDay: Int) {
             val initialDelayMinutes = computeInitialDelayMinutes(hourOfDay)
-            val request = PeriodicWorkRequestBuilder<StreakReminderWorker>(
-                1, TimeUnit.DAYS
-            )
+            val request = OneTimeWorkRequestBuilder<StreakReminderWorker>()
                 .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                ExistingWorkPolicy.REPLACE,
                 request
             )
         }

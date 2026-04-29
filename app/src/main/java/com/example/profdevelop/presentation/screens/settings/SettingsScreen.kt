@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
@@ -148,7 +149,7 @@ fun SettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                LeadingIcon(Icons.Filled.Bedtime, BrandWarmSoft, BrandGreen)
+                                LeadingIcon(reminderIconForHour(state.settings.dailyReminderHour), BrandWarmSoft, BrandGreen)
                                 Spacer(Modifier.size(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
@@ -377,6 +378,9 @@ private fun ToggleRow(
         }
     }
 }
+
+private fun reminderIconForHour(hour: Int): ImageVector =
+    if (hour in 6..17) Icons.Filled.WbSunny else Icons.Filled.Bedtime
 
 @Composable
 private fun LeadingIcon(icon: ImageVector, bg: Color, tint: Color) {

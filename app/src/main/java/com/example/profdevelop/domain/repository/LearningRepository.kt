@@ -20,6 +20,6 @@ interface LearningRepository {
     suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult
     suspend fun getPracticeQuestions(limit: Int = 12): List<Question>
     suspend fun getLeaderboard(tier: String? = null): List<LeaderboardEntry>
-    suspend fun getXpBoostStatus(): XpBoostStatus
-    suspend fun activateXpBoost(durationMinutes: Int = 30): XpBoostStatus
+    suspend fun getXpBoostStatus(dailyXpGoal: Int? = null): XpBoostStatus
+    suspend fun activateXpBoost(durationMinutes: Int = 30, dailyXpGoal: Int? = null): XpBoostStatus
 }

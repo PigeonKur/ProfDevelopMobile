@@ -125,12 +125,13 @@ class LearningRepositoryImpl(
         }
     }
 
-    override suspend fun getXpBoostStatus(): XpBoostStatus {
+    override suspend fun getXpBoostStatus(dailyXpGoal: Int?): XpBoostStatus {
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
-        val dto = remoteDataSource.getXpBoostStatus(baseUrl, session.accessToken)
+        val dto = remoteDataSource.getXpBoostStatus(baseUrl, session.accessToken, dailyXpGoal)
         return XpBoostStatus(
             isActive = dto.isActive,
+            activeUntil = dto.activeUntil,
             remainingSeconds = dto.remainingSeconds,
             lessonsToday = dto.lessonsToday,
             xpToday = dto.xpToday,
@@ -138,12 +139,13 @@ class LearningRepositoryImpl(
         )
     }
 
-    override suspend fun activateXpBoost(durationMinutes: Int): XpBoostStatus {
+    override suspend fun activateXpBoost(durationMinutes: Int, dailyXpGoal: Int?): XpBoostStatus {
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
-        val dto = remoteDataSource.activateXpBoost(baseUrl, session.accessToken, durationMinutes)
+        val dto = remoteDataSource.activateXpBoost(baseUrl, session.accessToken, durationMinutes, dailyXpGoal)
         return XpBoostStatus(
             isActive = dto.isActive,
+            activeUntil = dto.activeUntil,
             remainingSeconds = dto.remainingSeconds,
             lessonsToday = dto.lessonsToday,
             xpToday = dto.xpToday,

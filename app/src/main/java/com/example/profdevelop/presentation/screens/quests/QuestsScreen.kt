@@ -22,6 +22,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -34,6 +35,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.profdevelop.R
+import com.example.profdevelop.data.local.AppSettings
+import com.example.profdevelop.data.local.SettingsPreferencesDataSource
 import com.example.profdevelop.domain.model.UserProfile
 import com.example.profdevelop.domain.model.XpBoostStatus
 import com.example.profdevelop.domain.usecase.GetStoredSessionUseCase
@@ -49,22 +52,26 @@ import com.example.profdevelop.presentation.theme.BrandWarmSoft
 
 @Composable
 fun QuestsScreen(
+    refreshToken: Int,
     getStoredSessionUseCase: GetStoredSessionUseCase,
-    getXpBoostStatusUseCase: GetXpBoostStatusUseCase
+    getXpBoostStatusUseCase: GetXpBoostStatusUseCase,
+    settingsDataSource: SettingsPreferencesDataSource
 ) {
-    val user by produceState<UserProfile?>(initialValue = null) {
+    val settings by settingsDataSource.flow.collectAsState(initial = AppSettings())
+
+    val user by produceState<UserProfile?>(initialValue = null, refreshToken) {
         value = getStoredSessionUseCase()?.user
     }
 
-    // Прогресс дневных заданий считается на сервере (boost-status даёт
-    // lessonsToday и xpToday, посчитанные с 00:00 UTC).
-    val daily by produceState<XpBoostStatus?>(initialValue = null, user) {
+    val daily by produceState<XpBoostStatus?>(initialValue = null, user?.id, refreshToken, settings.dailyXpGoal) {
         if (user == null) return@produceState
-        runCatching { getXpBoostStatusUseCase() }
+        runCatching { getXpBoostStatusUseCase(settings.dailyXpGoal) }
             .onSuccess { value = it }
     }
 
-    val items = remember(user, daily) { buildQuests(user, daily) }
+    val items = remember(user, daily, settings.dailyXpGoal) {
+        buildQuests(user, daily, settings.dailyXpGoal)
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -105,7 +112,7 @@ private data class Quest(
     val emoji: String
 )
 
-private fun buildQuests(user: UserProfile?, daily: XpBoostStatus?): List<Quest> {
+private fun buildQuests(user: UserProfile?, daily: XpBoostStatus?, dailyXpGoal: Int): List<Quest> {
     val lessonsToday = daily?.lessonsToday ?: 0
     val xpToday = daily?.xpToday ?: 0
     val streakActive = isStreakActiveFor(user?.lastActiveDate)
@@ -127,10 +134,10 @@ private fun buildQuests(user: UserProfile?, daily: XpBoostStatus?): List<Quest> 
             emoji = "🔥"
         ),
         Quest(
-            title = "Заработай 30 XP сегодня",
+            title = "Заработай ${dailyXpGoal} XP сегодня",
             description = "Один-два хороших урока и задание выполнено",
-            current = xpToday.coerceAtMost(30),
-            target = 30,
+            current = xpToday.coerceAtMost(dailyXpGoal),
+            target = dailyXpGoal,
             xp = 20,
             emoji = "✨"
         )
@@ -182,46 +189,40 @@ private fun QuestCard(quest: Quest) {
                 Text(
                     text = quest.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = BrandMuted
+                    color = BrandMuted,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(RoundedCornerShape(999.dp)),
                     color = BrandGreen,
-                    trackColor = BrandGreenSoft
+                    trackColor = Color(0xFFE7EEE8)
                 )
-                Spacer(Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "${quest.current} / ${quest.target}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = BrandMuted
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.xp),
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            colorFilter = ColorFilter.tint(Color(0xFFD4A000))
-                        )
-                        Text(
-                            text = "+${quest.xp} XP",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFFD4A000),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                Text(
+                    text = "${quest.current} / ${quest.target}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = BrandMuted,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(id = R.drawable.xp),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(if (done) BrandGreen else BrandMuted)
+                )
+                Text(
+                    text = "+${quest.xp}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (done) BrandGreen else BrandText,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
         }
     }

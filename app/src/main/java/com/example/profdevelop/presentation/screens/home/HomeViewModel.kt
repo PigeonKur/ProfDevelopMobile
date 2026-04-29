@@ -3,6 +3,7 @@ package com.example.profdevelop.presentation.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.profdevelop.data.local.SettingsPreferencesDataSource
 import com.example.profdevelop.domain.model.Course
 import com.example.profdevelop.domain.model.Lesson
 import com.example.profdevelop.domain.model.UserProfile
@@ -12,6 +13,7 @@ import com.example.profdevelop.domain.usecase.GetAssignedCoursesUseCase
 import com.example.profdevelop.domain.usecase.GetLessonsUseCase
 import com.example.profdevelop.domain.usecase.GetStoredSessionUseCase
 import com.example.profdevelop.domain.usecase.GetXpBoostStatusUseCase
+import java.time.LocalDate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -29,23 +31,37 @@ class HomeViewModel(
     private val getStoredSessionUseCase: GetStoredSessionUseCase,
     private val getAchievementsUseCase: GetAchievementsUseCase,
     private val getXpBoostStatusUseCase: GetXpBoostStatusUseCase,
-    private val activateXpBoostUseCase: ActivateXpBoostUseCase
+    private val activateXpBoostUseCase: ActivateXpBoostUseCase,
+    private val settingsDataSource: SettingsPreferencesDataSource
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
+
     private var boostTickerJob: Job? = null
-    private var activatingBoost: Boolean = false
+    private var activatingBoost = false
+
+    init {
+        viewModelScope.launch {
+            settingsDataSource.flow.collect { settings ->
+                _state.update {
+                    it.copy(
+                        dailyXpGoal = settings.dailyXpGoal,
+                        lastGoalCelebrateDate = settings.lastDailyGoalCelebrateDate
+                    )
+                }
+                refreshBoostStatus()
+            }
+        }
+    }
 
     fun load() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 val session = getStoredSessionUseCase()
                 val user = session?.user
                 val courses = getAssignedCoursesUseCase().sortedBy { it.id }
 
-                // Грузим уроки всех курсов и список ачивок параллельно — раньше
-                // это были N+1 последовательных запросов, заметно тормозило.
                 val (chapters, achievementsCount) = coroutineScope {
                     val lessonsDeferred = courses.mapIndexed { index, course ->
                         async {
@@ -61,12 +77,12 @@ class HomeViewModel(
                     }
                     lessonsDeferred.awaitAll() to achievementsDeferred.await()
                 }
-                val nextLesson = chapters
-                    .firstNotNullOfOrNull { chapter ->
-                        chapter.lessons.firstOrNull { !it.isCompleted && it.isUnlocked }?.let { lesson ->
-                            HomeNextLesson(chapter.course.id, chapter.course.title, lesson)
-                        }
+
+                val nextLesson = chapters.firstNotNullOfOrNull { chapter ->
+                    chapter.lessons.firstOrNull { !it.isCompleted && it.isUnlocked }?.let { lesson ->
+                        HomeNextLesson(chapter.course.id, chapter.course.title, lesson)
                     }
+                }
 
                 HomeUiState(
                     isLoading = false,
@@ -74,7 +90,10 @@ class HomeViewModel(
                     achievementsCount = achievementsCount,
                     chapters = chapters,
                     nextLesson = nextLesson,
-                    boostSecondsLeft = _state.value.boostSecondsLeft
+                    boostSecondsLeft = _state.value.boostSecondsLeft,
+                    dailyXpGoal = _state.value.dailyXpGoal,
+                    lastGoalCelebrateDate = _state.value.lastGoalCelebrateDate,
+                    goalReachedToday = _state.value.goalReachedToday
                 )
             }.onSuccess {
                 _state.value = it
@@ -82,31 +101,37 @@ class HomeViewModel(
             }.onFailure {
                 _state.value = HomeUiState(
                     isLoading = false,
-                    error = "Не удалось загрузить учебный путь."
+                    error = "Не удалось загрузить учебный путь.",
+                    dailyXpGoal = _state.value.dailyXpGoal,
+                    lastGoalCelebrateDate = _state.value.lastGoalCelebrateDate,
+                    goalReachedToday = _state.value.goalReachedToday
                 )
             }
         }
     }
 
     fun activateBoost() {
-        if (activatingBoost) return
-        if (_state.value.boostSecondsLeft > 0) return
+        if (activatingBoost || _state.value.boostSecondsLeft > 0) return
         if (!_state.value.boostEligible) {
-            _state.update { it.copy(boostMessage = "Сначала пройди 3 урока или набери 60 XP сегодня.") }
+            _state.update {
+                it.copy(boostMessage = "Сначала пройди 3 урока или набери ${it.dailyXpGoal} XP сегодня.")
+            }
             return
         }
+
         activatingBoost = true
         _state.update { it.copy(boostActivating = true) }
         viewModelScope.launch {
-            runCatching { activateXpBoostUseCase() }
+            runCatching { activateXpBoostUseCase(dailyXpGoal = _state.value.dailyXpGoal) }
                 .onSuccess { status ->
-                    startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
+                    startBoostTicker(status.activeUntil, status.remainingSeconds.coerceAtLeast(0))
                     _state.update {
                         it.copy(
-                            boostMessage = "🚀 2x XP включён на 30 минут!",
+                            boostMessage = "2x XP включён на 30 минут!",
                             boostLessonsToday = status.lessonsToday,
                             boostXpToday = status.xpToday,
-                            boostEligible = status.isEligible
+                            boostEligible = status.isEligible,
+                            goalReachedToday = status.xpToday >= it.dailyXpGoal
                         )
                     }
                 }
@@ -124,31 +149,55 @@ class HomeViewModel(
 
     private fun refreshBoostStatus() {
         viewModelScope.launch {
-            runCatching { getXpBoostStatusUseCase() }
+            runCatching { getXpBoostStatusUseCase(_state.value.dailyXpGoal) }
                 .onSuccess { status ->
-                    if (status.isActive) startBoostTicker(status.remainingSeconds.coerceAtLeast(0))
+                    if (status.isActive) startBoostTicker(status.activeUntil, status.remainingSeconds.coerceAtLeast(0))
                     else stopBoostTicker()
+
+                    val today = LocalDate.now().toString()
+                    val shouldCelebrate =
+                        status.xpToday >= _state.value.dailyXpGoal &&
+                            _state.value.lastGoalCelebrateDate != today
+
+                    if (shouldCelebrate) {
+                        settingsDataSource.setLastDailyGoalCelebrateDate(today)
+                    }
+
                     _state.update {
                         it.copy(
                             boostLessonsToday = status.lessonsToday,
                             boostXpToday = status.xpToday,
-                            boostEligible = status.isEligible
+                            boostEligible = status.isEligible,
+                            goalReachedToday = status.xpToday >= it.dailyXpGoal,
+                            lastGoalCelebrateDate = if (shouldCelebrate) today else it.lastGoalCelebrateDate,
+                            boostMessage = if (shouldCelebrate) {
+                                "Поздравляем! Вы достигли дневной цели!"
+                            } else it.boostMessage
                         )
                     }
                 }
         }
     }
 
-    private fun startBoostTicker(initialSeconds: Int) {
+    private fun startBoostTicker(activeUntil: String?, initialSeconds: Int) {
         boostTickerJob?.cancel()
         _state.update { it.copy(boostSecondsLeft = initialSeconds) }
         if (initialSeconds <= 0) return
+
+        val deadline = runCatching {
+            activeUntil?.let { java.time.OffsetDateTime.parse(it).toInstant() }
+        }.getOrNull()
+
         boostTickerJob = viewModelScope.launch {
-            var left = initialSeconds
-            while (left > 0) {
+            while (true) {
+                val left = deadline
+                    ?.let { java.time.Duration.between(java.time.Instant.now(), it).seconds.toInt() }
+                    ?: _state.value.boostSecondsLeft
+
+                val normalized = left.coerceAtLeast(0)
+                _state.update { it.copy(boostSecondsLeft = normalized) }
+                if (normalized <= 0) break
                 delay(1000L)
-                left -= 1
-                _state.update { it.copy(boostSecondsLeft = left.coerceAtLeast(0)) }
             }
         }
     }
@@ -186,7 +235,10 @@ data class HomeUiState(
     val boostActivating: Boolean = false,
     val boostLessonsToday: Int = 0,
     val boostXpToday: Int = 0,
-    val boostEligible: Boolean = false
+    val boostEligible: Boolean = false,
+    val dailyXpGoal: Int = 30,
+    val goalReachedToday: Boolean = false,
+    val lastGoalCelebrateDate: String? = null
 ) {
     val boostActive: Boolean get() = boostSecondsLeft > 0
     val showBoostBanner: Boolean get() = boostActive || boostEligible
@@ -198,7 +250,8 @@ class HomeViewModelFactory(
     private val getStoredSessionUseCase: GetStoredSessionUseCase,
     private val getAchievementsUseCase: GetAchievementsUseCase,
     private val getXpBoostStatusUseCase: GetXpBoostStatusUseCase,
-    private val activateXpBoostUseCase: ActivateXpBoostUseCase
+    private val activateXpBoostUseCase: ActivateXpBoostUseCase,
+    private val settingsDataSource: SettingsPreferencesDataSource
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -208,7 +261,8 @@ class HomeViewModelFactory(
             getStoredSessionUseCase,
             getAchievementsUseCase,
             getXpBoostStatusUseCase,
-            activateXpBoostUseCase
+            activateXpBoostUseCase,
+            settingsDataSource
         ) as T
     }
 }

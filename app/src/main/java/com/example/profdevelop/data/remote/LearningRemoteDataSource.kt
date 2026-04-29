@@ -41,20 +41,22 @@ class LearningRemoteDataSource(
         return createUsersApi(baseUrl, accessToken).getLeaderboard(tier)
     }
 
-    suspend fun getXpBoostStatus(
-        baseUrl: String,
-        accessToken: String
-    ): com.example.profdevelop.data.remote.dto.XpBoostStatusDto {
-        return createProgressApi(baseUrl, accessToken).getXpBoostStatus()
-    }
-
-    suspend fun activateXpBoost(
+        suspend fun getXpBoostStatus(
         baseUrl: String,
         accessToken: String,
-        durationMinutes: Int = 30
+        dailyXpGoal: Int? = null
+    ): com.example.profdevelop.data.remote.dto.XpBoostStatusDto {
+        return createProgressApi(baseUrl, accessToken).getXpBoostStatus(dailyXpGoal)
+    }
+
+        suspend fun activateXpBoost(
+        baseUrl: String,
+        accessToken: String,
+        durationMinutes: Int = 30,
+        dailyXpGoal: Int? = null
     ): com.example.profdevelop.data.remote.dto.XpBoostStatusDto {
         return createProgressApi(baseUrl, accessToken)
-            .activateXpBoost(com.example.profdevelop.data.remote.dto.ActivateBoostRequestDto(durationMinutes))
+            .activateXpBoost(com.example.profdevelop.data.remote.dto.ActivateBoostRequestDto(durationMinutes, dailyXpGoal))
     }
 
     suspend fun checkQuestion(

@@ -252,5 +252,6 @@ data class XpBoostStatusDto(
 )
 
 data class ActivateBoostRequestDto(
-    @SerializedName("durationMinutes") val durationMinutes: Int
+    @SerializedName("durationMinutes") val durationMinutes: Int,
+    @SerializedName("dailyXpGoal") val dailyXpGoal: Int? = null
 )

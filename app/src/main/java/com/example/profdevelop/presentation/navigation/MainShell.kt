@@ -105,7 +105,8 @@ fun MainShell(
                             getStoredSessionUseCase = module.getStoredSessionUseCase,
                             getAchievementsUseCase = module.getAchievementsUseCase,
                             getXpBoostStatusUseCase = module.getXpBoostStatusUseCase,
-                            activateXpBoostUseCase = module.activateXpBoostUseCase
+                            activateXpBoostUseCase = module.activateXpBoostUseCase,
+                            settingsDataSource = module.settingsDataSource
                         )
                     )
                     HomeScreen(
@@ -148,8 +149,10 @@ fun MainShell(
 
                 composable(AppDestination.Quests.route) {
                     QuestsScreen(
+                        refreshToken = refreshToken,
                         getStoredSessionUseCase = module.getStoredSessionUseCase,
-                        getXpBoostStatusUseCase = module.getXpBoostStatusUseCase
+                        getXpBoostStatusUseCase = module.getXpBoostStatusUseCase,
+                        settingsDataSource = module.settingsDataSource
                     )
                 }
 
@@ -160,7 +163,10 @@ fun MainShell(
                             getAchievementsUseCase = module.getAchievementsUseCase
                         )
                     )
-                    AchievementsScreen(viewModel = viewModel)
+                    AchievementsScreen(
+                        viewModel = viewModel,
+                        refreshToken = refreshToken
+                    )
                 }
 
                 composable(AppDestination.Profile.route) {
@@ -173,6 +179,7 @@ fun MainShell(
                     )
                     ProfileScreen(
                         viewModel = viewModel,
+                        refreshToken = refreshToken,
                         onLoggedOut = onLoggedOut,
                         onOpenSettings = onOpenSettings
                     )
