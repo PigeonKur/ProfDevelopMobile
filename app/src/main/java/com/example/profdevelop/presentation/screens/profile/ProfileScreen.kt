@@ -216,7 +216,7 @@ private fun StatsBlock(user: UserProfile) {
         StatChip(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.xp,
-            iconTint = Color(0xFFD4A000),
+            iconTint = null,
             value = "${user.totalXp}",
             label = "Всего XP",
             background = Color(0xFFFFF9E0)
@@ -224,7 +224,7 @@ private fun StatsBlock(user: UserProfile) {
         StatChip(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.burn,
-            iconTint = if (user.isStreakActive()) Color(0xFFFF9600) else Color(0xFF9DA89E),
+            iconTint = if (user.isStreakActive()) null else Color(0xFF9DA89E),
             value = "${user.streakDays}",
             label = "Серия",
             background = if (user.isStreakActive()) Color(0xFFFFF3E0) else Color(0xFFEFEFEF)
@@ -232,7 +232,7 @@ private fun StatsBlock(user: UserProfile) {
         StatChip(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.approved,
-            iconTint = BrandGreen,
+            iconTint = null,
             value = "${user.level}",
             label = "Уровень",
             background = BrandGreenSoft
@@ -244,7 +244,7 @@ private fun StatsBlock(user: UserProfile) {
 private fun StatChip(
     modifier: Modifier = Modifier,
     iconRes: Int,
-    iconTint: Color,
+    iconTint: Color?,
     value: String,
     label: String,
     background: Color
@@ -268,8 +268,8 @@ private fun StatChip(
                 Image(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    colorFilter = ColorFilter.tint(iconTint)
+                    modifier = Modifier.size(22.dp),
+                    colorFilter = iconTint?.let { ColorFilter.tint(it) }
                 )
                 Text(
                     text = value,
@@ -531,8 +531,7 @@ private fun LeaderboardRow(
                     Image(
                         painter = painterResource(R.drawable.xp),
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        colorFilter = ColorFilter.tint(Color(0xFFD4A000))
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = "${entry.totalXp}",
@@ -549,9 +548,8 @@ private fun LeaderboardRow(
                         painter = painterResource(R.drawable.burn),
                         contentDescription = null,
                         modifier = Modifier.size(12.dp),
-                        colorFilter = ColorFilter.tint(
-                            if (entry.streakDays > 0) Color(0xFFFF9600) else Color(0xFF9DA89E)
-                        )
+                        colorFilter = if (entry.streakDays > 0) null
+                            else ColorFilter.tint(Color(0xFF9DA89E))
                     )
                     Text(
                         text = "${entry.streakDays}",
