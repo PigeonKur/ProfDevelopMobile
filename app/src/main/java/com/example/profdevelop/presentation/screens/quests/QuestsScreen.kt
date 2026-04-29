@@ -82,7 +82,7 @@ fun QuestsScreen(
                     color = BrandText
                 )
                 Text(
-                    text = "Дневные цели в духе Duolingo. Возвращайся каждый день, чтобы не сбросить серию.",
+                    text = "Дневные цели. Возвращайся каждый день, чтобы не сбросить серию.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = BrandMuted,
                     modifier = Modifier.padding(top = 4.dp)
