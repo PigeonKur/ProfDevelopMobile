@@ -88,7 +88,7 @@ fun HomeScreen(
     val context = LocalContext.current
 
     LaunchedEffect(refreshToken) {
-        if (refreshToken > 0) viewModel.load()
+        viewModel.load()
     }
 
     LaunchedEffect(state.boostMessage) {
