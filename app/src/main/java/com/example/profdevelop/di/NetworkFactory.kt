@@ -52,7 +52,10 @@ class NetworkFactory {
         }
 
         if (BuildConfig.DEBUG) {
-            val sslContext = SSLContext.getInstance("SSL")
+            // На отладке принимаем самоподписанный сертификат локального API (10.0.2.2:7222
+            // и т.п.). В release-сборке этот блок не выполняется и используется штатный
+            // системный TrustManager. Используем TLS, а не устаревший "SSL".
+            val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, arrayOf<TrustManager>(trustAllManager), SecureRandom())
             builder.sslSocketFactory(sslContext.socketFactory, trustAllManager)
             builder.hostnameVerifier(HostnameVerifier { _, _ -> true })

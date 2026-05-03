@@ -20,7 +20,17 @@ class PracticeViewModel(
     private val _state = MutableStateFlow(PracticeUiState())
     val state: StateFlow<PracticeUiState> = _state.asStateFlow()
 
-    init { load() }
+    // Помним последний refreshToken, чтобы не перегружать список при простом
+    // переключении вкладок. Загружаем заново только если экран открыли впервые
+    // или после события (например, прохождения урока), которое инкрементнуло токен.
+    private var lastRefreshToken: Int = -1
+
+    fun refreshIfNeeded(token: Int) {
+        if (token != lastRefreshToken) {
+            lastRefreshToken = token
+            load()
+        }
+    }
 
     fun load() {
         viewModelScope.launch {

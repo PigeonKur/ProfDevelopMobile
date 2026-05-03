@@ -135,6 +135,7 @@ fun MainShell(
                     )
                     PracticeScreen(
                         viewModel = viewModel,
+                        refreshToken = refreshToken,
                         onClose = {
                             tabNav.navigate(AppDestination.Home.route) {
                                 popUpTo(tabNav.graph.findStartDestination().id) {

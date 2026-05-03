@@ -19,7 +19,17 @@ class AchievementsViewModel(
     private val _state = MutableStateFlow(AchievementsUiState(isLoading = true))
     val state: StateFlow<AchievementsUiState> = _state.asStateFlow()
 
-    init { load() }
+    // Перезагружаем список ачивок при первом открытии экрана и каждый раз,
+    // когда родительский refreshToken изменился (например, после прохождения
+    // урока или открытия новой ачивки).
+    private var lastRefreshToken: Int = -1
+
+    fun refreshIfNeeded(token: Int) {
+        if (token != lastRefreshToken) {
+            lastRefreshToken = token
+            load()
+        }
+    }
 
     fun load() {
         viewModelScope.launch {

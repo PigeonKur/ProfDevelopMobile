@@ -61,7 +61,7 @@ fun AchievementsScreen(
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(refreshToken) {
-        viewModel.load()
+        viewModel.refreshIfNeeded(refreshToken)
     }
 
     Column(

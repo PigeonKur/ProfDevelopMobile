@@ -181,19 +181,20 @@ class HomeViewModel(
 
     private fun startBoostTicker(activeUntil: String?, initialSeconds: Int) {
         boostTickerJob?.cancel()
-        _state.update { it.copy(boostSecondsLeft = initialSeconds) }
-        if (initialSeconds <= 0) return
+        val safeInitial = initialSeconds.coerceAtLeast(0)
+        _state.update { it.copy(boostSecondsLeft = safeInitial) }
+        if (safeInitial <= 0) return
 
-        val deadline = runCatching {
-            activeUntil?.let { java.time.OffsetDateTime.parse(it).toInstant() }
-        }.getOrNull()
+        // Якоримся на локальные часы устройства: server's remainingSeconds + device's now.
+        // Это устойчиво к расхождению часов сервера и устройства (раньше парсили
+        // server-side activeUntil и часы могли разойтись на пару часов, отсюда баги
+        // вида "28 минут стало 130"). При следующем входе в приложение сервер
+        // отдаёт свежий remainingSeconds — и таймер пересчитается заново.
+        val deadline = java.time.Instant.now().plusSeconds(safeInitial.toLong())
 
         boostTickerJob = viewModelScope.launch {
             while (true) {
-                val left = deadline
-                    ?.let { java.time.Duration.between(java.time.Instant.now(), it).seconds.toInt() }
-                    ?: _state.value.boostSecondsLeft
-
+                val left = java.time.Duration.between(java.time.Instant.now(), deadline).seconds.toInt()
                 val normalized = left.coerceAtLeast(0)
                 _state.update { it.copy(boostSecondsLeft = normalized) }
                 if (normalized <= 0) break

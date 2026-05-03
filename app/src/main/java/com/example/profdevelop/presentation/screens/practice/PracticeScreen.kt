@@ -50,9 +50,18 @@ import com.example.profdevelop.presentation.theme.BrandWarmSoft
 @Composable
 fun PracticeScreen(
     viewModel: PracticeViewModel,
+    refreshToken: Int = 0,
     onClose: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Обновляем список вопросов при первом открытии экрана и каждый раз,
+    // когда родительский refreshToken инкрементнулся (например, после
+    // прохождения урока) — чтобы вопросы, на которые пользователь только
+    // что ответил правильно, исчезали из практики без перезахода.
+    androidx.compose.runtime.LaunchedEffect(refreshToken) {
+        viewModel.refreshIfNeeded(refreshToken)
+    }
 
     Box(
         modifier = Modifier
