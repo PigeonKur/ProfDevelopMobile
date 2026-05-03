@@ -59,13 +59,13 @@ class LearningRepositoryImpl(
         }
     }
 
-    override suspend fun checkQuestion(answer: QuestionAttempt): QuestionCheckResult {
+    override suspend fun checkQuestion(answer: QuestionAttempt, mode: String?): QuestionCheckResult {
         val session = requireSession()
         val baseUrl = localDataSource.getApiUrl()
         return remoteDataSource.checkQuestion(
             baseUrl = baseUrl,
             accessToken = session.accessToken,
-            request = answer.toCheckDto()
+            request = answer.toCheckDto().copy(mode = mode)
         ).toDomain()
     }
 

@@ -80,7 +80,8 @@ class PracticeViewModel(
                         questionId = current.id,
                         selectedAnswerIds = _state.value.selected.toList(),
                         matchingPairs = emptyList()
-                    )
+                    ),
+                    mode = "practice"
                 )
             }.onSuccess { review ->
                 _state.value = _state.value.copy(

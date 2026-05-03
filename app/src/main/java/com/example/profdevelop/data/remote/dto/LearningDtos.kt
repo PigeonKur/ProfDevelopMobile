@@ -81,7 +81,8 @@ data class QuestionAttemptDto(
 data class QuestionCheckRequestDto(
     @SerializedName("questionId") val questionId: Int,
     @SerializedName("selectedAnswerIds") val selectedAnswerIds: List<Int>?,
-    @SerializedName("matchingPairs") val matchingPairs: List<MatchingAnswerDto>?
+    @SerializedName("matchingPairs") val matchingPairs: List<MatchingAnswerDto>?,
+    @SerializedName("mode") val mode: String? = null
 )
 
 data class MatchingAnswerDto(

@@ -16,7 +16,7 @@ interface LearningRepository {
     suspend fun getLessons(courseId: Int): List<Lesson>
     suspend fun getQuestions(lessonId: Int): List<Question>
     suspend fun getAchievements(userId: Int): List<Achievement>
-    suspend fun checkQuestion(answer: QuestionAttempt): QuestionCheckResult
+    suspend fun checkQuestion(answer: QuestionAttempt, mode: String? = null): QuestionCheckResult
     suspend fun submitLessonAttempt(attempt: LessonAttempt): LessonResult
     suspend fun getPracticeQuestions(limit: Int = 12): List<Question>
     suspend fun getLeaderboard(tier: String? = null): List<LeaderboardEntry>

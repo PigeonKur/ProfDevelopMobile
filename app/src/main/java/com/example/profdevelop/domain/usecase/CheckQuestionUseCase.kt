@@ -7,6 +7,6 @@ import com.example.profdevelop.domain.repository.LearningRepository
 class CheckQuestionUseCase(
     private val repository: LearningRepository
 ) {
-    suspend operator fun invoke(answer: QuestionAttempt): QuestionCheckResult =
-        repository.checkQuestion(answer)
+    suspend operator fun invoke(answer: QuestionAttempt, mode: String? = null): QuestionCheckResult =
+        repository.checkQuestion(answer, mode)
 }

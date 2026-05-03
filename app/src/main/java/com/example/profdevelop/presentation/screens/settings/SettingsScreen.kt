@@ -21,21 +21,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Snackbar
@@ -240,52 +236,6 @@ fun SettingsScreen(
                     checked = state.settings.largeText,
                     onChecked = viewModel::toggleLargeText
                 )
-            }
-
-            item { SectionHeader("Сервер") }
-            item {
-                SettingsCard {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            LeadingIcon(Icons.Filled.Language, BrandWarmSoft, BrandGreen)
-                            Spacer(Modifier.size(12.dp))
-                            Text(
-                                text = "Адрес API",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = BrandText,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        OutlinedTextField(
-                            value = state.apiUrl,
-                            onValueChange = viewModel::updateApiUrl,
-                            singleLine = true,
-                            isError = state.apiUrlError != null,
-                            supportingText = state.apiUrlError?.let {
-                                { Text(it, color = BrandDanger) }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Button(
-                            onClick = viewModel::saveApiUrl,
-                            enabled = !state.isSaving,
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                        ) {
-                            Text(
-                                text = if (state.isSaving) "Сохраняем…" else "Сохранить",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
             }
 
             item {
