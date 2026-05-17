@@ -211,7 +211,8 @@ data class LessonUiState(
     val feedback: LessonFeedback? = null,
     val showResult: Boolean = false,
     val result: LessonResult? = null,
-    val error: String? = null
+    val error: String? = null,
+    val totalUniqueCount: Int = 0
 ) {
     val currentQuestion: Question?
         get() = questions.firstOrNull { it.id == questionQueue.getOrNull(currentQuestionIndex) }

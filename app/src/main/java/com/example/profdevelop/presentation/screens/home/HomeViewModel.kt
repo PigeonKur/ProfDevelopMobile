@@ -213,16 +213,30 @@ class HomeViewModel(
 data class HomeChapter(
     val index: Int,
     val course: Course,
-    val lessons: List<Lesson>
+    val lessons: List<Lesson>,
+    val completedCountOverride: Int? = null
 ) {
-    val completedCount: Int get() = lessons.count { it.isCompleted }
+    constructor(course: Course, lessons: List<Lesson>, completedCount: Int) : this(
+        index = 0,
+        course = course,
+        lessons = lessons,
+        completedCountOverride = completedCount
+    )
+
+    val completedCount: Int get() = completedCountOverride ?: lessons.count { it.isCompleted }
 }
 
 data class HomeNextLesson(
     val courseId: Int,
     val courseTitle: String,
     val lesson: Lesson
-)
+) {
+    constructor(lesson: Lesson, courseTitle: String) : this(
+        courseId = 0,
+        courseTitle = courseTitle,
+        lesson = lesson
+    )
+}
 
 data class HomeUiState(
     val isLoading: Boolean = true,

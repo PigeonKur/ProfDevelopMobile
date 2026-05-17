@@ -10,6 +10,6 @@ data class UserProfile(
     val totalXp: Int,
     val level: Int,
     val streakDays: Int,
-    val avatarUrl: String?,
+    val avatarUrl: String? = null,
     val lastActiveDate: String? = null
 )

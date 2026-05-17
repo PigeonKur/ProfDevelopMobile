@@ -24,7 +24,7 @@ class SplashViewModel(
     private fun restoreSession() {
         viewModelScope.launch {
             delay(1100)
-            val session = restoreSessionUseCase()
+            val session = runCatching { restoreSessionUseCase() }.getOrNull()
             _state.value = if (session != null) SplashState.Authorized else SplashState.Unauthorized
         }
     }

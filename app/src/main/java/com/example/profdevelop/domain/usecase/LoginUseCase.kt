@@ -10,5 +10,7 @@ class LoginUseCase(
         email: String,
         password: String,
         rememberMe: Boolean
-    ): Result<UserSession> = repository.login(email, password, rememberMe)
+    ): Result<UserSession> = runCatching {
+        repository.login(email.trim(), password, rememberMe).getOrThrow()
+    }
 }

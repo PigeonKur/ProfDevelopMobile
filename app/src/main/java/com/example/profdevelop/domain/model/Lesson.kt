@@ -12,4 +12,26 @@ data class Lesson(
     val isUnlocked: Boolean,
     val score: Int?,
     val maxScore: Int?
-)
+) {
+    constructor(
+        id: Int,
+        courseId: Int,
+        title: String,
+        orderIndex: Int,
+        xpReward: Int,
+        isCompleted: Boolean,
+        isUnlocked: Boolean
+    ) : this(
+        id = id,
+        title = title,
+        orderIndex = orderIndex,
+        xpReward = xpReward,
+        description = null,
+        lessonType = "quiz",
+        estimatedMinutes = 0,
+        isCompleted = isCompleted,
+        isUnlocked = isUnlocked,
+        score = null,
+        maxScore = null
+    )
+}

@@ -18,7 +18,8 @@ data class SettingsUiState(
     val apiUrl: String = "",
     val isSaving: Boolean = false,
     val message: String? = null,
-    val apiUrlError: String? = null
+    val apiUrlError: String? = null,
+    val reminderEnabled: Boolean? = null
 )
 
 private val URL_REGEX = Regex("^https?://[^\\s]+\\S$")

@@ -6,5 +6,7 @@ import com.example.profdevelop.domain.repository.AuthRepository
 class RestoreSessionUseCase(
     private val repository: AuthRepository
 ) {
-    suspend operator fun invoke(): UserSession? = repository.restoreSession()
+    suspend operator fun invoke(): UserSession? = runCatching {
+        repository.restoreSession()
+    }.getOrNull()
 }

@@ -12,4 +12,27 @@ data class Course(
     val completedLessons: Int,
     val isMandatory: Boolean,
     val deadline: String?
-)
+) {
+    constructor(
+        id: Int,
+        title: String,
+        description: String?,
+        totalLessons: Int,
+        completedLessons: Int,
+        progressPercent: Int,
+        isAssigned: Boolean,
+        thumbnailUrl: String?
+    ) : this(
+        id = id,
+        title = title,
+        description = description,
+        category = null,
+        difficulty = null,
+        estimatedMinutes = 0,
+        progressPercent = progressPercent,
+        totalLessons = totalLessons,
+        completedLessons = completedLessons,
+        isMandatory = isAssigned,
+        deadline = thumbnailUrl
+    )
+}
